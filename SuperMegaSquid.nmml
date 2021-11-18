@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+	<meta title="Terror of the Deep" description="An arena action game like no other!" package="com.pause9.supermegasquid" version="0.0.1" company="Pause 9" />
+
+	<app title="Terror of the Deep" main="com.pause9.supermegasquid.Main" file="SuperMegaSquid" version="0.0.1" company="Pause 9" />
+	
+	<window width="800" height="480" fps="60" orientation="landscape" resizable="false" if="web" />
+	<window fps="60" orientation="landscape" fullscreen="true" antialiasing="0" hardware="true" unless="web" />
+ 	
+	<set name="BUILD_DIR" value="bin" />
+	
+	<!--<setenv name="no_console" value="1" />-->
+	
+	<classpath name="source" />
+	
+	<assets path="assets" if="android" >
+		<sound path="data/beep.wav" id="Beep" />
+		<sound path="sounds/watersplash5.wav" id="Player_Splash" />
+		<sound path="sounds/playerhitland2.wav" id="Player_Land" />
+		<sound path="sounds/metalhit.wav" id="Metal_Hit" />
+		<sound path="sounds/splat.wav" id="Splat" />
+		<sound path="sounds/spin4.wav" id="Spin" />
+		<sound path="sounds/underwater2.wav" id="Underwater_Ambient" />
+		<sound path="sounds/wind.wav" id="Wind_Ambient" />
+		<sound path="sounds/explosion2small.wav" id="Explosion_Small" />
+		<sound path="sounds/explosion2.wav" id="Explosion" />
+		<music path="sounds/themesong.mp3" id="BGMusic" />
+		
+		<!-- Your sound embedding code here... -->
+		
+	</assets>
+	
+	<assets path="assets" if="desktop" >
+		<sound path="data/beep.wav" id="Beep" />
+		<sound path="sounds/watersplash5.wav" id="Player_Splash" />
+		<sound path="sounds/playerhitland2.wav" id="Player_Land" />
+		<sound path="sounds/metalhit.wav" id="Metal_Hit" />
+		<sound path="sounds/splat.wav" id="Splat" />
+		<sound path="sounds/spin4.wav" id="Spin" />
+		<sound path="sounds/underwater2.wav" id="Underwater_Ambient" />
+		<sound path="sounds/wind.wav" id="Wind_Ambient" />
+		<sound path="sounds/explosion2small.wav" id="Explosion_Small" />
+		<sound path="sounds/explosion2.wav" id="Explosion" />
+		<music path="sounds/themesong.mp3" id="BGMusic" />
+		
+		<!-- Your sound embedding code here... -->
+		
+	</assets>
+	
+	<assets path="assets" if="flash" >
+		<sound path="data/beep.mp3" id="Beep" />
+		<sound path="sounds/watersplash5.wav" id="Player_Splash" />
+		<sound path="sounds/playerhitland2.wav" id="Player_Land" />
+		<sound path="sounds/metalhit.wav" id="Metal_Hit" />
+		<sound path="sounds/splat.wav" id="Splat" />
+		<sound path="sounds/spin4.wav" id="Spin" />
+		<sound path="sounds/underwater2.wav" id="Underwater_Ambient" />
+		<sound path="sounds/wind.wav" id="Wind_Ambient" />
+		<sound path="sounds/explosion2small.wav" id="Explosion_Small" />
+		<sound path="sounds/explosion2.wav" id="Explosion" />
+		<music path="sounds/themesong.mp3" id="BGMusic" />
+		
+		<!-- Your sound embedding code here... -->
+		
+	</assets>
+	
+	<assets path="assets" if="target_js" >
+		<sound path="data/beep.mp3" id="Beep" />
+		
+		<!-- Your sound embedding code here... -->
+		
+	</assets>
+	
+	<assets path="assets" exclude="*.wav" if="flash" />
+	<assets path="assets" unless="flash" />
+	<assets path="assets/rockprp.ttf" />
+	
+	<icon name="assets/icon.svg" />
+	
+	
+	<haxelib name="nme" />
+	<haxelib name="flixel" />
+	<haxedef name="NAPE_RELEASE_BUILD"/>
+	<haxelib name="nape" />
+	<haxelib name="gconsole" unless="mobile"/>
+	<haxedef name="!FLX_NO_DEBUG"/>
+	<haxedef name="HXCPP_STACK_TRACE" if="desktop"/>
+	<app preloader="com.pause9.supermegasquid.SMSPreloader" />
+</project>

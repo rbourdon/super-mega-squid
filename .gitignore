@@ -1,0 +1,6 @@
+#assets
+*.ai
+/working_assets
+
+#production
+/bin
