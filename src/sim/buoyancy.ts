@@ -137,6 +137,36 @@ const GRAVITY_M = toMeters(WORLD.gravity);
  * The buoyant force is applied at the centre of the submerged area, which gives
  * boats a natural righting moment.
  */
+/**
+ * Water forces for long, thin, neutrally buoyant bodies (tentacle segments):
+ * buoyancy exactly cancels gravity when submerged, and drag is much stronger
+ * across the segment than along it, so a chain of them streams behind the
+ * squid and curls through turns. Returns the submerged fraction.
+ */
+export function applyStreamlinedWaterForces(body: Body, water: Water, dragAcross: number, dragAlong: number): number {
+  const sub = submersion(body, water);
+  if (sub.area <= 0 || sub.totalArea <= 0) return 0;
+  const fraction = Math.min(1, sub.area / sub.totalArea);
+  const mass = body.getMass();
+  body.applyForceToCenter(new Vec2(0, -mass * GRAVITY_M * fraction), true);
+
+  const angle = body.getAngle();
+  const ax = Math.cos(angle);
+  const ay = Math.sin(angle);
+  const v = body.getLinearVelocity();
+  const along = v.x * ax + v.y * ay;
+  const px = v.x - along * ax;
+  const py = v.y - along * ay;
+  const k = mass * fraction;
+  body.applyForceToCenter(
+    new Vec2(-(px * dragAcross + along * ax * dragAlong) * k, -(py * dragAcross + along * ay * dragAlong) * k),
+    true,
+  );
+  const w = body.getAngularVelocity();
+  body.applyTorque(-w * PHYSICS.waterAngularDrag * fraction * body.getInertia(), true);
+  return fraction;
+}
+
 export function applyWaterForces(body: Body, water: Water, dragScale = 1): number {
   const sub = submersion(body, water);
   if (sub.area <= 0 || sub.totalArea <= 0) return 0;

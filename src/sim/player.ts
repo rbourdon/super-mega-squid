@@ -14,6 +14,8 @@ export interface PlayerContext {
 export interface TentacleSegment extends Tracked {
   length: number;
   thickness: number;
+  /** Fraction under water, updated every step. */
+  submerged: number;
 }
 
 /** The squid: a round head with four jointed tentacles (16 bodies in total). */
@@ -36,6 +38,8 @@ export class Player extends Entity {
   stunTimer = 0;
   hurtTimer = 0;
   mouthOpen = false;
+  /** Seconds since spawn, drives the tentacle wave. */
+  private clock = 0;
   /** Set when the player has lost control (game over). */
   limp = false;
   private targetAngle = 0;
@@ -72,8 +76,8 @@ export class Player extends Entity {
           type: 'dynamic',
           position: vecM(cx, y + attachY),
           angle: Math.PI,
-          linearDamping: 0.4,
-          angularDamping: 1.5,
+          linearDamping: 0.1,
+          angularDamping: 0.3,
           allowSleep: false,
         });
         boxFixture(body, length, spec.thickness, {
@@ -95,7 +99,7 @@ export class Player extends Entity {
             collideConnected: false,
           }),
         );
-        const segment = Object.assign(new Tracked(body), { length, thickness: spec.thickness });
+        const segment = Object.assign(new Tracked(body), { length, thickness: spec.thickness, submerged: 0 });
         chain.push(segment);
         this.segments.push(segment);
         prevBody = body;
@@ -149,7 +153,7 @@ export class Player extends Entity {
         const damp = Math.min(1, PLAYER.swimTurnDamping * dt);
         vx -= (vx - ux * along2) * damp;
         vy -= (vy - uy * along2) * damp;
-        this.propel(vx - v.x, vy - v.y);
+        this.propel(vx - v.x, vy - v.y, TENTACLES.swimShare);
       } else {
         // Limited air control: steer sideways and dive, but no flying upwards.
         let vx = v.x;
@@ -160,7 +164,7 @@ export class Player extends Entity {
           if (along < target) vx += Math.sign(ux) * Math.min(PLAYER.airAccel * dt, target - along);
         }
         if (uy > 0.2 && vy < PLAYER.airSpeed) vy += PLAYER.airAccel * dt * uy;
-        this.propel(vx - v.x, vy - v.y);
+        this.propel(vx - v.x, vy - v.y, TENTACLES.swimShare);
       }
       this.targetAngle = Math.atan2(uy, ux);
       const err = wrapAngle(this.targetAngle - head.getAngle());
@@ -180,6 +184,7 @@ export class Player extends Entity {
       ctx.emit({ type: 'eggs' });
     }
     this.updateEggs(dt, ctx);
+    this.wiggle(dt);
     this.clampSpeed();
   }
 
@@ -194,7 +199,8 @@ export class Player extends Entity {
       impulse = PLAYER.lungeImpulseAir;
       this.canAirLunge = false;
     }
-    this.propel(Math.cos(direction) * impulse, Math.sin(direction) * impulse);
+    // The head is thrown forward and the tentacles snap out behind it like a whip.
+    this.propel(Math.cos(direction) * impulse, Math.sin(direction) * impulse, TENTACLES.lungeShare);
     this.body.setAngle(direction);
     this.body.setAngularVelocity(0);
     ctx.emit({ type: 'lunge', x: this.x, y: this.y, wet: this.wet });
@@ -242,12 +248,46 @@ export class Player extends Entity {
   }
 
   /**
-   * Change the whole squid's velocity. The tentacles outweigh the head (as in
-   * the original), so pushing only the head would have them drag it back.
+   * Change the squid's velocity by (dvx, dvy) overall, but mostly through the
+   * head: the tentacles get only a share, so they lag, stretch and whip in
+   * behind. The head gets a correspondingly bigger kick so total momentum (and
+   * so swim speed and leap height) is the same as moving everything together.
    */
-  private propel(dvx: number, dvy: number): void {
-    addVelocity(this.body, dvx, dvy);
-    for (const seg of this.segments) addVelocity(seg.body, dvx, dvy);
+  private propel(dvx: number, dvy: number, tentacleShare: number): void {
+    const headMass = this.body.getMass();
+    let tentacleMass = 0;
+    for (const seg of this.segments) tentacleMass += seg.body.getMass();
+    const k = (headMass + tentacleMass) / (headMass + tentacleMass * tentacleShare);
+    addVelocity(this.body, dvx * k, dvy * k);
+    if (tentacleShare <= 0) return;
+    for (const seg of this.segments) addVelocity(seg.body, dvx * k * tentacleShare, dvy * k * tentacleShare);
+  }
+
+  /**
+   * A wave travelling down each tentacle keeps them squirming, strongest at the
+   * tips and underwater; in the air they mostly just flap and dangle.
+   */
+  private wiggle(dt: number): void {
+    this.clock += dt;
+    const headAngle = this.body.getAngle();
+    // Normal pointing to the head's lower side (+y in its local frame).
+    const nx = -Math.sin(headAngle);
+    const ny = Math.cos(headAngle);
+    const calm = this.limp ? 0.3 : 1;
+    this.tentacles.forEach((chain, t) => {
+      // Each tentacle keeps its own rhythm so they never move in lockstep.
+      const speed = TENTACLES.wiggleSpeed * (0.8 + 0.13 * t);
+      const side = TENTACLES.attachYs[t] / 8;
+      chain.forEach((seg, s) => {
+        const reach = (s + 1) / chain.length;
+        const strength = TENTACLES.wiggleAccel * reach * (0.25 + 0.75 * seg.submerged) * calm;
+        const phase = this.clock * speed - s * TENTACLES.wigglePhase + t * 1.7;
+        const a = seg.body.getAngle();
+        const push = Math.sin(phase) * strength * dt;
+        const spread = TENTACLES.spreadAccel * side * reach * seg.submerged * calm * dt;
+        addVelocity(seg.body, -Math.sin(a) * push + nx * spread, Math.cos(a) * push + ny * spread);
+      });
+    });
   }
 
   private clampSpeed(): void {

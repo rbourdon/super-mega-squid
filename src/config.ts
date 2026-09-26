@@ -45,7 +45,7 @@ export const WAVES = {
 } as const;
 
 export const PLAYER = {
-  spawn: { x: 1350, y: 500 },
+  spawn: { x: 1080, y: 500 },
   radius: 13,
   density: 10,
   friction: 0.3,
@@ -64,9 +64,8 @@ export const PLAYER = {
   lungeImpulseAir: 620,
   lungeCooldown: 0.42,
   maxSpeed: 1400,
-  /** Water drag multipliers: the squid is streamlined, its tentacles trail. */
+  /** Water drag multiplier for the streamlined head. */
   headWaterDrag: 0.5,
-  tentacleWaterDrag: 0.9,
   spinDuration: 10 / 60,
   spinCooldown: 0.85,
   spinAngularSpeed: 28,
@@ -86,17 +85,30 @@ export const PLAYER = {
   landSoundSpeed: 160,
 } as const;
 
-/** Tentacle segment sizes (original: 4 tentacles of 4 segments). */
+/** Tentacle segment sizes (original: 4 tentacles of 4 segments, joined by free pivots). */
 export const TENTACLES = {
   attachX: -7.5,
   attachYs: [-8, -3, 3, 8] as const,
   firstSegmentLengths: [22, 20, 20, 22] as const,
+  // Much lighter than the head so they whip around instead of steering it.
   segments: [
-    { length: 22, thickness: 8, density: 8 },
-    { length: 18, thickness: 7, density: 6 },
-    { length: 15, thickness: 5, density: 6 },
-    { length: 14, thickness: 3, density: 7 },
+    { length: 22, thickness: 8, density: 2.4 },
+    { length: 18, thickness: 7, density: 2 },
+    { length: 15, thickness: 5, density: 1.8 },
+    { length: 14, thickness: 3, density: 1.6 },
   ] as const,
+  /** Water drag (1/s) across a segment and along it: they stream and curl like ribbons. */
+  dragAcross: 7,
+  dragAlong: 0.9,
+  /** Share of a swim stroke or lunge applied directly to the tentacles (the rest reaches them through the joints). */
+  swimShare: 0.25,
+  lungeShare: 0.3,
+  /** Travelling wave that keeps them squirming (px/s^2 at the tip, radians/s, radians per segment). */
+  wiggleAccel: 2300,
+  wiggleSpeed: 6.5,
+  wigglePhase: 1.3,
+  /** Underwater push away from the body's midline (px/s^2) so the tentacles fan out instead of bunching. */
+  spreadAccel: 700,
 } as const;
 
 export const EGG = {

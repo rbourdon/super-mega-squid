@@ -1,7 +1,7 @@
 import { Vec2, type Contact, type Fixture, type World } from 'planck';
-import { BUOYS, CRATE, ENEMIES, PHYSICS, PLAYER, PROJECTILES, RAGE, SPAWN, type EnemyKind } from '../config';
+import { BUOYS, CRATE, ENEMIES, PHYSICS, PLAYER, PROJECTILES, RAGE, SPAWN, TENTACLES, type EnemyKind } from '../config';
 import levelData from '../level/levelData.json';
-import { applyWaterForces } from './buoyancy';
+import { applyStreamlinedWaterForces, applyWaterForces } from './buoyancy';
 import { Enemy, type EnemyContext } from './enemy';
 import type { Entity, PartTag } from './entity';
 import { NO_INPUT, type HurtSource, type InputFrame, type SimEvent } from './events';
@@ -227,7 +227,9 @@ export class Simulation {
   private applyWater(): void {
     const player = this.player;
     player.submerged = applyWaterForces(player.body, this.water, PLAYER.headWaterDrag);
-    for (const seg of player.segments) applyWaterForces(seg.body, this.water, PLAYER.tentacleWaterDrag);
+    for (const seg of player.segments) {
+      seg.submerged = applyStreamlinedWaterForces(seg.body, this.water, TENTACLES.dragAcross, TENTACLES.dragAlong);
+    }
     for (const e of this.enemies) e.submerged = applyWaterForces(e.body, this.water);
     for (const e of this.eggs) e.submerged = applyWaterForces(e.body, this.water);
     for (const e of this.crates) e.submerged = applyWaterForces(e.body, this.water);
