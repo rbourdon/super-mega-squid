@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
+import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { MenuScene } from './scenes/MenuScene';
 import { ResultsScene } from './scenes/ResultsScene';
 
@@ -35,8 +36,25 @@ const game = new Phaser.Game({
     gamepad: gamepadsAvailable(),
     activePointers: 4,
   },
-  scene: [BootScene, MenuScene, GameScene, HudScene, ResultsScene],
+  scene: [BootScene, MenuScene, LevelSelectScene, GameScene, HudScene, ResultsScene],
 });
+
+// Phaser dispatches each key event as soon as it arrives but only empties its key queue
+// once per frame, so every key pressed later in the same frame replays the earlier ones
+// (Right then Enter became Right, Right, Enter). Drop events that were already dispatched
+// before Phaser queues the next one; this capturing listener runs before Phaser's own.
+const keyboardManager = game.input.keyboard as unknown as { queue: KeyboardEvent[] } | null;
+if (keyboardManager) {
+  for (const type of ['keydown', 'keyup']) {
+    window.addEventListener(
+      type,
+      () => {
+        keyboardManager.queue.length = 0;
+      },
+      true,
+    );
+  }
+}
 
 // Exposed for debugging and end-to-end tests.
 declare global {

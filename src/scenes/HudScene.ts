@@ -95,6 +95,7 @@ export class HudScene extends Phaser.Scene {
     this.createStatus();
     this.createTouchControls();
     this.createPauseMenu();
+    this.showBanner(this.gameScene.level.name, '#ffffff');
 
     const gameEvents = this.gameScene.events;
     const onOrbs = (x: number, y: number, count: number) => this.spawnOrbs(x, y, count);

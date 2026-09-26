@@ -15,6 +15,14 @@ art, sound and music.
 **Goal:** eat all 35 humans (swimmers, divers, ferry passengers and balloonists) before your **rage** meter empties.
 Rage drains constantly, a little faster the longer the rampage lasts, and refills whenever you eat something.
 
+Pick one of two levels when you start:
+
+- **The Cove**: the original map, with cliffs at both ends and a floating isle over open water.
+- **Arch Rock**: a floating stone arch whose legs dip into the sea, a broken sea stack you can dive under, stepping
+  stones up to a sky island, a deep trench and a planted reef.
+
+High scores are kept for each level.
+
 You only hurt things you hit **fast**: swim hard, lunge or spin your tentacles. Slow bumps just push prey around.
 
 | Action     | Keyboard           | Gamepad             | Touch                  |
@@ -76,12 +84,13 @@ The end-to-end tests run Chromium with software WebGL, so they work without a GP
 ```
 src/
   sim/        Headless game simulation: physics, water, squid, enemies, spawning, rules (no Phaser)
-  scenes/     Phaser scenes: Boot (loading), Menu, Game, Hud (HUD, touch controls, pause), Results
+  scenes/     Phaser scenes: Boot (loading), Menu, Levels (level select), Game, Hud (HUD, touch controls, pause), Results
   render/     Views that draw the simulation: backdrop, water, squid, entities, effects
+  level/      Level list (names, spawn points, buoys) and the generated level data
   config.ts   Every tuning value: physics, abilities, enemies, spawn rates, scoring
   input.ts    Keyboard, gamepad and touch merged into one input per physics step
   audio.ts    Music, ambience and sound effects
-scripts/      Asset pipeline (level tiles, collision outlines, audio transcoding)
+scripts/      Asset pipeline (level tiles, collision outlines, audio transcoding) and the Arch Rock art generator
 art/          Source art and audio the pipeline builds from (not shipped)
 public/       Game-ready assets served as-is
 tests/        unit/ (Vitest) and e2e/ (Playwright)
@@ -97,11 +106,17 @@ right themselves and swimmers bob head-up.
 
 ### Asset pipeline
 
-The level art is a single 8697×3001 image, too large for many GPUs. `npm run assets:level` composites the vegetation
-layer over the terrain, slices the result into 512 px tiles (skipping empty ones), extracts collision outlines from the
-terrain's alpha channel with marching squares, and writes `src/level/levelData.json`. `npm run assets:audio` transcodes
-the original WAV files to Ogg Vorbis and MP3 (needs `ffmpeg`). The outputs are committed, so you only need these after
-changing files in `art/`.
+Each level's art is a single image about 9000×3000 pixels, too large for many GPUs, in `art/levels/<id>/`.
+`npm run assets:level` composites the vegetation layer over the terrain, slices the result into 512 px tiles (skipping
+empty ones), extracts collision outlines from the terrain's alpha channel with marching squares, renders a preview for
+the level select screen, and writes `src/level/<id>.json`. `npm run assets:audio` transcodes the original WAV files to
+Ogg Vorbis and MP3 (needs `ffmpeg`). The outputs are committed, so you only need these after changing files in `art/`.
+
+The Cove is the original 2013 art. Arch Rock is drawn by `npm run assets:arches` (`scripts/generate-arches.ts`) in the
+same style: its rocks are laid out as outlines, cut into stones with a stretched Voronoi pattern, and painted with the
+original palette (light rims, outlines and spots on the stones, dark mortar, orange cracks, moss caps with drips and
+sand). Its seaweed and coral are cut out of the original vegetation layer and replanted. The generator is
+deterministic; after changing it, run `npm run assets:arches` and then `npm run assets:level`.
 
 ## What changed from the 2013 version
 
@@ -110,6 +125,7 @@ nothing, there was no score, no goal and no ending. This version finishes the de
 
 - **A goal and an ending**: rage is your life, the town has 35 humans to eat, and there are victory and game-over screens
   with a score breakdown and saved high scores.
+- **A second level**: Arch Rock, a new map in the style of the original, chosen from a level select screen.
 - **Escalation**: alert levels bring helicopter gunfire, submarine torpedoes and more military traffic.
 - **More to do**: combos and score, spin parries, a three-hit ferry with passengers, balloonists who fall into the sea,
   cargo planes that drop crates, swimmers and divers who flee, moored buoys, bubbles, splashes and ripples.

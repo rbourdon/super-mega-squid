@@ -1,24 +1,25 @@
 import { expect, test } from '@playwright/test';
-import { activeScenes, openMenu, sim, trackErrors, waitForSteps } from './helpers';
+import { activeScenes, openMenu, sim, startLevel, trackErrors, waitForSteps } from './helpers';
 
 test.describe('Super Mega Squid', () => {
   test('boots to the menu and starts a game from the keyboard', async ({ page }) => {
     const errors = trackErrors(page);
     await openMenu(page);
     await expect(page).toHaveTitle(/Super Mega Squid/);
-    await page.keyboard.press('Enter');
-    await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
+    await startLevel(page, 0);
     await waitForSteps(page, 60);
-    const state = await sim<{ state: string; humans: number }>(page, 'return { state: sim.rules.state, humans: sim.rules.humansLeft };');
-    expect(state).toEqual({ state: 'playing', humans: 35 });
+    const state = await sim<{ state: string; humans: number; level: string }>(
+      page,
+      'return { state: sim.rules.state, humans: sim.rules.humansLeft, level: sim.level.id };',
+    );
+    expect(state).toEqual({ state: 'playing', humans: 35, level: 'cove' });
     expect(errors).toEqual([]);
   });
 
   test('keyboard controls steer the squid', async ({ page }) => {
     const errors = trackErrors(page);
     await openMenu(page);
-    await page.keyboard.press('Enter');
-    await expect.poll(() => activeScenes(page)).toContain('Game');
+    await startLevel(page, 0);
     await sim(page, 'sim.teleportPlayer(3400, 2000);');
     const startX = await sim<number>(page, 'return sim.player.x;');
     await page.keyboard.down('d');
@@ -36,8 +37,7 @@ test.describe('Super Mega Squid', () => {
 
   test('pauses and resumes with Escape', async ({ page }) => {
     await openMenu(page);
-    await page.keyboard.press('Enter');
-    await expect.poll(() => activeScenes(page)).toContain('Game');
+    await startLevel(page, 0);
     await waitForSteps(page, 10);
     await page.keyboard.press('Escape');
     await expect.poll(() => sim<boolean>(page, 'return game.paused;')).toBe(true);
@@ -52,8 +52,7 @@ test.describe('Super Mega Squid', () => {
   test('shows results when rage runs out and can start again', async ({ page }) => {
     const errors = trackErrors(page);
     await openMenu(page);
-    await page.keyboard.press('Enter');
-    await expect.poll(() => activeScenes(page)).toContain('Game');
+    await startLevel(page, 0);
     // Freeze the game loop the moment the results appear, so the key press below is
     // guaranteed to land inside their input delay however slow the machine is.
     await sim(page, `game.scene.get('Results').events.once('create', () => game.game.loop.sleep()); sim.rules.rage = 1;`);
@@ -69,15 +68,51 @@ test.describe('Super Mega Squid', () => {
     await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
     await waitForSteps(page, 10);
     expect(await sim<string>(page, 'return sim.rules.state;')).toBe('playing');
-    const best = await page.evaluate(() => JSON.parse(localStorage.getItem('super-mega-squid:v1') ?? '{}').bestScore);
+    const best = await page.evaluate(() => JSON.parse(localStorage.getItem('super-mega-squid:v1') ?? '{}').levels?.cove?.bestScore);
     expect(best).toBeGreaterThanOrEqual(0);
+    expect(errors).toEqual([]);
+  });
+
+  test('picks the level from the level select and keeps it for the next game', async ({ page }) => {
+    const errors = trackErrors(page);
+    await openMenu(page);
+    // Escape backs out of the level select.
+    await page.keyboard.press('Enter');
+    await expect.poll(() => activeScenes(page)).toEqual(['Levels']);
+    await page.keyboard.press('Escape');
+    await expect.poll(() => activeScenes(page)).toEqual(['Menu']);
+
+    // Choose with keys pressed within a single frame: each must count once.
+    await page.keyboard.press('Enter');
+    await expect.poll(() => activeScenes(page)).toEqual(['Levels']);
+    await page.evaluate(() => window.__SMS__!.loop.sleep());
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await page.evaluate(() => window.__SMS__!.loop.wake(true));
+    await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
+    await waitForSteps(page, 30);
+    const level = await sim<{ id: string; width: number }>(page, 'return { id: sim.level.id, width: sim.terrain.width };');
+    expect(level).toEqual({ id: 'arches', width: 9216 });
+
+    // Play again stays on the same level.
+    await sim(page, 'sim.rules.rage = 1;');
+    await expect.poll(() => activeScenes(page), { timeout: 30_000 }).toContain('Results');
+    await page.waitForTimeout(1000);
+    await page.keyboard.press('Enter');
+    await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
+    await waitForSteps(page, 10);
+    expect(await sim<string>(page, 'return sim.level.id;')).toBe('arches');
+
+    // Records are kept per level, and the level select opens on the level played last.
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('super-mega-squid:v1') ?? '{}'));
+    expect(saved.lastLevel).toBe('arches');
+    expect(Object.keys(saved.levels)).toEqual(['arches']);
     expect(errors).toEqual([]);
   });
 
   test('eating the last human wins the game', async ({ page }) => {
     await openMenu(page);
-    await page.keyboard.press('Enter');
-    await expect.poll(() => activeScenes(page)).toContain('Game');
+    await startLevel(page, 0);
     await sim(
       page,
       `sim.rules.humansEaten = sim.rules.population - 1;

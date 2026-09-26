@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { FONT_FAMILY, IMAGES, LEVEL, SHEETS, SOUNDS, tileKey } from '../assets';
+import { FONT_FAMILY, IMAGES, SHEETS, SOUNDS, previewKey, tileKey } from '../assets';
 import { ENEMIES } from '../config';
+import { LEVELS } from '../level/levels';
 import { coverImage } from '../ui/layout';
 
 const SPRITES = 'assets/sprites/';
@@ -50,8 +51,12 @@ export class BootScene extends Phaser.Scene {
         frameHeight: sheet.frameHeight,
       });
     }
-    for (const [tx, ty] of LEVEL.tiles) this.load.image(tileKey(tx, ty), `assets/level/tile_${tx}_${ty}.png`);
-    this.load.image('sky', 'assets/level/sky.png');
+    for (const level of LEVELS) {
+      const dir = `assets/levels/${level.id}`;
+      for (const [tx, ty] of level.data.tiles) this.load.image(tileKey(level.id, tx, ty), `${dir}/tile_${tx}_${ty}.png`);
+      this.load.image(previewKey(level.id), `${dir}/preview.png`);
+    }
+    this.load.image('sky', 'assets/levels/sky.png');
     for (const [key, file] of Object.entries(SOUNDS)) {
       this.load.audio(key, [`assets/audio/${file}.ogg`, `assets/audio/${file}.mp3`]);
     }

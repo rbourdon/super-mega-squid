@@ -44,7 +44,7 @@ export class Player extends Entity {
   limp = false;
   private targetAngle = 0;
 
-  constructor(world: World, x: number = PLAYER.spawn.x, y: number = PLAYER.spawn.y) {
+  constructor(world: World, x: number, y: number) {
     super(world.createBody({ type: 'dynamic', position: vecM(x, y), bullet: true, allowSleep: false }));
     const head = this.body;
     const headTag: PartTag = { part: 'head' };

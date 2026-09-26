@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { audio, type AudioDirector } from '../audio';
-import { PHYSICS, RAGE, WORLD } from '../config';
+import { PHYSICS, RAGE } from '../config';
 import { InputController } from '../input';
+import { levelById, type LevelDef } from '../level/levels';
 import { Backdrop } from '../render/Backdrop';
 import { Effects } from '../render/Effects';
 import { EntityViews } from '../render/EntityViews';
@@ -9,13 +10,18 @@ import { SquidView } from '../render/SquidView';
 import { WaterView } from '../render/WaterView';
 import type { SimEvent } from '../sim/events';
 import { Simulation } from '../sim/simulation';
-import { recordRun, type RunResult } from '../storage';
+import { recordRun, save, type RunResult } from '../storage';
 import { uiMetrics } from '../ui/layout';
 
 const MAX_STEPS_PER_FRAME = 5;
 const HUMAN_POPUP = '#ffd34d';
 
+export interface GameStartData {
+  level?: string;
+}
+
 export interface GameOverInfo extends RunResult {
+  level: LevelDef;
   kills: number;
   victoryBonus: number;
   newBest: boolean;
@@ -27,6 +33,7 @@ export interface GameOverInfo extends RunResult {
  * HUD, pause menu and results are separate overlay scenes.
  */
 export class GameScene extends Phaser.Scene {
+  level!: LevelDef;
   sim!: Simulation;
   controls!: InputController;
   paused = false;
@@ -51,6 +58,11 @@ export class GameScene extends Phaser.Scene {
     super('Game');
   }
 
+  init(data: GameStartData): void {
+    this.level = levelById(data?.level);
+    save({ lastLevel: this.level.id });
+  }
+
   create(): void {
     this.paused = false;
     this.ended = false;
@@ -58,8 +70,8 @@ export class GameScene extends Phaser.Scene {
     this.accumulator = 0;
     this.endTimer = -1;
 
-    this.sim = new Simulation();
-    this.backdrop = new Backdrop(this);
+    this.sim = new Simulation({ level: this.level });
+    this.backdrop = new Backdrop(this, this.level);
     this.views = new EntityViews(this);
     this.squid = new SquidView(this);
     this.water = new WaterView(this);
@@ -67,7 +79,7 @@ export class GameScene extends Phaser.Scene {
     this.backdrop.seedClouds(this.sim.player.x);
 
     const cam = this.cameras.main;
-    cam.setBounds(0, 0, WORLD.width, WORLD.height);
+    cam.setBounds(0, 0, this.sim.terrain.width, this.sim.terrain.height);
     this.camX = this.sim.player.x;
     this.camY = this.sim.player.y;
     this.fitCamera();
@@ -184,8 +196,9 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const w = cam.width / cam.zoom;
     const h = cam.height / cam.zoom;
-    const x = w >= WORLD.width ? (WORLD.width - w) / 2 : Phaser.Math.Clamp(this.camX - w / 2, 0, WORLD.width - w);
-    const y = h >= WORLD.height ? (WORLD.height - h) / 2 : Phaser.Math.Clamp(this.camY - h / 2, 0, WORLD.height - h);
+    const { width, height } = this.sim.terrain;
+    const x = w >= width ? (width - w) / 2 : Phaser.Math.Clamp(this.camX - w / 2, 0, width - w);
+    const y = h >= height ? (height - h) / 2 : Phaser.Math.Clamp(this.camY - h / 2, 0, height - h);
     return this.view.setTo(x, y, w, h);
   }
 
@@ -318,8 +331,8 @@ export class GameScene extends Phaser.Scene {
       won: rules.state === 'won',
       time: rules.elapsed,
     };
-    const records = recordRun(run);
-    const info: GameOverInfo = { ...run, ...records, kills: rules.kills, victoryBonus: rules.victoryBonus };
+    const records = recordRun(this.level.id, run);
+    const info: GameOverInfo = { ...run, ...records, level: this.level, kills: rules.kills, victoryBonus: rules.victoryBonus };
     this.scene.launch('Results', info);
     this.scene.bringToTop('Results');
   }
@@ -327,7 +340,7 @@ export class GameScene extends Phaser.Scene {
   restart(): void {
     this.scene.stop('Results');
     this.scene.stop('Hud');
-    this.scene.restart();
+    this.scene.restart({ level: this.level.id } satisfies GameStartData);
   }
 
   quitToMenu(): void {

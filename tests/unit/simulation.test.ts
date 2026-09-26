@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ENEMIES, PLAYER, SPAWN, WORLD } from '../../src/config';
+import { ENEMIES, PLAYER, SPAWN } from '../../src/config';
+import { LEVELS } from '../../src/level/levels';
 import { NO_INPUT, type InputFrame, type SimEvent } from '../../src/sim/events';
 import { Projectile } from '../../src/sim/projectile';
 import { Egg } from '../../src/sim/props';
@@ -273,8 +274,8 @@ describe('game flow', () => {
     expect(play()).toEqual(play());
   });
 
-  it('stays stable and in bounds through a long chaotic session, never spawning inside rock', () => {
-    const sim = new Simulation({ seed: 1234 });
+  it.each(LEVELS)('stays stable and in bounds through a long chaotic session on $name, never spawning inside rock', (level) => {
+    const sim = new Simulation({ seed: 1234, level });
     const rng = new Rng(77);
     const seen = new Set<number>();
     let input = NO_INPUT;
@@ -293,8 +294,8 @@ describe('game flow', () => {
     const p = sim.player;
     for (const v of [p.x, p.y, ...p.segments.flatMap((s) => [s.x, s.y])]) expect(Number.isFinite(v)).toBe(true);
     expect(p.x).toBeGreaterThan(0);
-    expect(p.x).toBeLessThan(WORLD.width);
-    expect(p.y).toBeLessThan(WORLD.height);
+    expect(p.x).toBeLessThan(sim.terrain.width);
+    expect(p.y).toBeLessThan(sim.terrain.height);
     expect(sim.terrain.isSolid(p.x, p.y)).toBe(false);
     expect(seen.size).toBeGreaterThan(20);
   });

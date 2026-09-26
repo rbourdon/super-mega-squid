@@ -1,5 +1,4 @@
 import { ENEMIES } from './config';
-import levelData from './level/levelData.json';
 
 /** Single images, keyed by file name (without extension) in assets/sprites. */
 export const IMAGES = [
@@ -62,13 +61,7 @@ export const SOUNDS = {
 
 export type SoundKey = keyof typeof SOUNDS;
 
-export const LEVEL = levelData as unknown as {
-  width: number;
-  height: number;
-  tileSize: number;
-  tiles: Array<[number, number, number, number]>;
-};
-
-export const tileKey = (tx: number, ty: number): string => `tile_${tx}_${ty}`;
+export const tileKey = (level: string, tx: number, ty: number): string => `${level}:tile_${tx}_${ty}`;
+export const previewKey = (level: string): string => `${level}:preview`;
 
 export const FONT_FAMILY = '"Rocket Propelled", "Arial Black", sans-serif';

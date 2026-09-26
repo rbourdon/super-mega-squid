@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "assets:arches": "tsx scripts/generate-arches.ts",
     "assets:level": "tsx scripts/build-level.ts",
     "assets:audio": "bash scripts/convert-audio.sh"
   },

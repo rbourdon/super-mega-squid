@@ -17,8 +17,25 @@ export async function openMenu(page: Page): Promise<void> {
 
 export async function activeScenes(page: Page): Promise<string[]> {
   return page.evaluate(() =>
-    ['Boot', 'Menu', 'Game', 'Hud', 'Results'].filter((key) => window.__SMS__?.scene.isActive(key)),
+    ['Boot', 'Menu', 'Levels', 'Game', 'Hud', 'Results'].filter((key) => window.__SMS__?.scene.isActive(key)),
   );
+}
+
+/** From the menu, open the level select with the keyboard and start the level at `index`. */
+export async function startLevel(page: Page, index = 0): Promise<void> {
+  await page.keyboard.press('Enter');
+  await expect.poll(() => activeScenes(page)).toEqual(['Levels']);
+  // The screen opens on the level played last; the selection wraps around.
+  const selected = () => page.evaluate(() => (window.__SMS__!.scene.getScene('Levels') as unknown as { selected: number }).selected);
+  // Keys are handled on the next game step, so wait for each press to land before the next.
+  for (let guard = 0; guard < 8 && (await selected()) !== index; guard++) {
+    const before = await selected();
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(selected).not.toBe(before);
+  }
+  expect(await selected()).toBe(index);
+  await page.keyboard.press('Enter');
+  await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
 }
 
 /** Evaluate against the running simulation (window.__SMS__ is exposed by main.ts). */

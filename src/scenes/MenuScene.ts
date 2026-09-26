@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { audio } from '../audio';
 import { OBJECTIVE } from '../config';
-import { load } from '../storage';
-import { coverImage, fitWidth, formatScore, formatTime, onTap, shadowText, textStyle, uiMetrics } from '../ui/layout';
+import { LEVELS } from '../level/levels';
+import { levelRecords } from '../storage';
+import { coverImage, fitWidth, formatScore, onTap, shadowText, textStyle, uiMetrics } from '../ui/layout';
 
 /** Title screen: the original menu art and "RELEASE ME!" button, plus controls and records. */
 export class MenuScene extends Phaser.Scene {
@@ -31,11 +32,10 @@ export class MenuScene extends Phaser.Scene {
     // The holder is sized to fit the layout; the button inside it pulses.
     const playHolder = this.add.container(0, 0, [play]);
 
-    const data = load();
+    const bests = LEVELS.map((level) => ({ level, best: levelRecords(level.id).bestScore })).filter((b) => b.best > 0);
     const records =
-      data.bestScore > 0
-        ? `BEST SCORE ${formatScore(data.bestScore)}   ·   MOST HUMANS ${data.bestHumans}/${OBJECTIVE.population}` +
-          (data.fastestWin > 0 ? `   ·   FASTEST WIN ${formatTime(data.fastestWin)}` : '')
+      bests.length > 0
+        ? `BEST SCORES   ${bests.map((b) => `${b.level.name} ${formatScore(b.best)}`).join('   ·   ')}`
         : `Eat all ${OBJECTIVE.population} humans in town before your rage runs out.`;
     const recordText = shadowText(this, 0, 0, records, 18).setOrigin(0.5, 1).setAlign('center');
 
@@ -148,6 +148,6 @@ export class MenuScene extends Phaser.Scene {
     if (this.started) return;
     this.started = true;
     this.cameras.main.fadeOut(250, 11, 28, 34);
-    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('Game'));
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('Levels'));
   }
 }

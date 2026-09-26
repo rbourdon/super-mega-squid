@@ -1,6 +1,6 @@
 import { Vec2, type Contact, type Fixture, type World } from 'planck';
 import { BUOYS, CRATE, ENEMIES, PHYSICS, PLAYER, PROJECTILES, RAGE, SPAWN, TENTACLES, type EnemyKind } from '../config';
-import levelData from '../level/levelData.json';
+import { DEFAULT_LEVEL, type LevelDef } from '../level/levels';
 import { applyStreamlinedWaterForces, applyWaterForces } from './buoyancy';
 import { Enemy, type EnemyContext } from './enemy';
 import type { Entity, PartTag } from './entity';
@@ -12,12 +12,12 @@ import { Buoy, Crate, Egg } from './props';
 import { Rng } from './rng';
 import { Rules } from './rules';
 import { Spawner, type SpawnContext } from './spawner';
-import { TERRAIN_TAG, Terrain, type TerrainData } from './terrain';
+import { TERRAIN_TAG, Terrain } from './terrain';
 import { Water } from './water';
 
 export interface SimulationOptions {
   seed?: number;
-  level?: TerrainData;
+  level?: LevelDef;
   population?: number;
   /** Disable automatic enemy spawning (used by tests). */
   spawning?: boolean;
@@ -39,6 +39,7 @@ const isEntity = (owner: BodyOwner): owner is Entity => owner !== null && 'alive
  * and visual effects.
  */
 export class Simulation {
+  readonly level: LevelDef;
   readonly world: World;
   readonly rng: Rng;
   readonly terrain: Terrain;
@@ -75,15 +76,16 @@ export class Simulation {
 
   constructor(options: SimulationOptions = {}) {
     this.rng = new Rng(options.seed ?? (Date.now() & 0xffffffff));
+    this.level = options.level ?? DEFAULT_LEVEL;
     this.world = createWorld();
-    this.terrain = new Terrain(options.level ?? (levelData as TerrainData));
+    this.terrain = new Terrain(this.level.data);
     this.terrain.createBodies(this.world);
     this.water = new Water(this.terrain.width, this.rng);
     this.rules = new Rules(options.population);
     this.spawning = options.spawning ?? true;
-    this.player = new Player(this.world, options.playerX, options.playerY);
+    this.player = new Player(this.world, options.playerX ?? this.level.spawn.x, options.playerY ?? this.level.spawn.y);
 
-    for (const x of BUOYS.positions) {
+    for (const x of this.level.buoys) {
       if (this.terrain.isClear(x, this.water.level, 20)) this.buoys.push(new Buoy(this.world, x, this.water.level - 12));
     }
 

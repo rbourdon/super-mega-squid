@@ -6,7 +6,7 @@ import type { GameOverInfo, GameScene } from './GameScene';
 /** How long the results ignore input, so a button mashed during play doesn't skip them. */
 const INPUT_DELAY_MS = 700;
 /** Vertical extent of the panel content above its origin. */
-const PANEL_TOP = -230;
+const PANEL_TOP = -262;
 
 /** End-of-run summary shown over the still-running world. */
 export class ResultsScene extends Phaser.Scene {
@@ -60,7 +60,8 @@ export class ResultsScene extends Phaser.Scene {
       )
       .setOrigin(0.5)
       .setAlpha(0.85);
-    panel.add([title, subtitle]);
+    const levelName = this.add.text(0, -240, info.level.name, textStyle(16)).setOrigin(0.5).setAlpha(0.7);
+    panel.add([levelName, title, subtitle]);
 
     const rows: Array<[string, string]> = [
       ['HUMANS EATEN', `${info.humans} / ${OBJECTIVE.population}`],

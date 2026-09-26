@@ -5,9 +5,8 @@
  * per-frame units at 60 fps).
  */
 
+/** Shared by every level (world size, spawn point and buoys are per level, see src/level/levels.ts). */
 export const WORLD = {
-  width: 8697,
-  height: 3000,
   /** Mean height of the water surface. */
   waterLevel: 1505,
   /** Soft ceiling so the squid can never leave the top of the map. */
@@ -45,7 +44,6 @@ export const WAVES = {
 } as const;
 
 export const PLAYER = {
-  spawn: { x: 1080, y: 500 },
   radius: 13,
   density: 10,
   friction: 0.3,
@@ -618,7 +616,6 @@ export const ENEMY_KINDS = Object.keys(ENEMIES) as EnemyKind[];
 
 /** Floating props anchored along the coast. */
 export const BUOYS = {
-  positions: [700, 3400, 4600, 6300, 7900] as const,
   width: 21,
   height: 57,
   /** Extra water damping so these light floats ride the swell instead of being tossed by it. */

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { LEVEL, tileKey } from '../assets';
-import { WORLD } from '../config';
+import { tileKey } from '../assets';
+import type { LevelDef } from '../level/levels';
 import { Depth } from './depth';
 
 interface Cloud {
@@ -18,31 +18,37 @@ export class Backdrop {
   private readonly tiles: Phaser.GameObjects.Image[] = [];
   private readonly clouds: Cloud[] = [];
 
-  constructor(private readonly scene: Phaser.Scene) {
+  constructor(
+    private readonly scene: Phaser.Scene,
+    level: LevelDef,
+  ) {
+    const { width, height, tileSize, tiles } = level.data;
     this.sky = scene.add.image(0, 0, 'sky').setOrigin(0, 0).setDepth(Depth.Sky);
-    this.sky.displayHeight = WORLD.height;
+    this.sky.displayHeight = height;
 
     // Two layers of underwater ridges for depth (the original used only the nearer one).
-    for (let i = 0; i < 4; i++) {
+    // Enough copies to span the parallax range plus the widest view.
+    const copies = (imageWidth: number, factor: number) => Math.ceil((width * factor + 3000) / imageWidth) + 1;
+    for (let i = 0; i < copies(3276, 0.45); i++) {
       scene.add
-        .image(i * 3276, WORLD.height - 496 - 90, 'scrollingbg')
+        .image(i * 3276, height - 496 - 90, 'scrollingbg')
         .setOrigin(0, 0)
         .setScrollFactor(0.45, 1)
         .setAlpha(0.35)
         .setDepth(Depth.FarMountains);
     }
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < copies(2000, 0.65); i++) {
       scene.add
-        .image(i * 2000, WORLD.height - 496, 'scrollingbg2')
+        .image(i * 2000, height - 496, 'scrollingbg2')
         .setOrigin(0, 0)
         .setScrollFactor(0.65, 1)
         .setDepth(Depth.Mountains);
     }
 
-    for (const [tx, ty] of LEVEL.tiles) {
+    for (const [tx, ty] of tiles) {
       this.tiles.push(
         scene.add
-          .image(tx * LEVEL.tileSize, ty * LEVEL.tileSize, tileKey(tx, ty))
+          .image(tx * tileSize, ty * tileSize, tileKey(level.id, tx, ty))
           .setOrigin(0, 0)
           .setDepth(Depth.Terrain),
       );

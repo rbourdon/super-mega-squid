@@ -16,6 +16,17 @@ async function tapPlay(page: Page): Promise<void> {
     return { x: m.tx, y: m.ty };
   });
   await page.touchscreen.tap(point.x, point.y);
+  await expect.poll(() => activeScenes(page)).toEqual(['Levels']);
+}
+
+/** Tap a level card on the level select screen. */
+async function tapLevel(page: Page, index: number): Promise<void> {
+  const box = await page.evaluate((i) => {
+    const scene = window.__SMS__!.scene.getScene('Levels') as unknown as { cards: Array<{ container: Phaser.GameObjects.Container }> };
+    const b = scene.cards[i].container.getBounds();
+    return { x: b.centerX, y: b.centerY };
+  }, index);
+  await page.touchscreen.tap(box.x, box.y);
   await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
 }
 
@@ -23,6 +34,7 @@ test('plays with touch controls on a phone in landscape', async ({ page }) => {
   const errors = trackErrors(page);
   await openMenu(page);
   await tapPlay(page);
+  await tapLevel(page, 0);
   await expect.poll(() => touchVisible(page)).toBe(true);
 
   // The squid starts in the sky with one air lunge available; tap LUNGE (bottom right).
@@ -39,6 +51,9 @@ test('plays in portrait too', async ({ page }) => {
   await page.setViewportSize({ width: 412, height: 915 });
   await openMenu(page);
   await tapPlay(page);
+  // Portrait stacks the level cards; pick the second one.
+  await tapLevel(page, 1);
+  expect(await sim<string>(page, 'return sim.level.id;')).toBe('arches');
   await waitForSteps(page, 60);
   expect(await sim<boolean>(page, 'return game.paused;')).toBe(false);
   await expect.poll(() => touchVisible(page)).toBe(true);
