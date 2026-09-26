@@ -54,11 +54,15 @@ test.describe('Super Mega Squid', () => {
     await openMenu(page);
     await page.keyboard.press('Enter');
     await expect.poll(() => activeScenes(page)).toContain('Game');
-    await sim(page, 'sim.rules.rage = 1;');
+    // Freeze the game loop the moment the results appear, so the key press below is
+    // guaranteed to land inside their input delay however slow the machine is.
+    await sim(page, `game.scene.get('Results').events.once('create', () => game.game.loop.sleep()); sim.rules.rage = 1;`);
     await expect.poll(() => activeScenes(page), { timeout: 30_000 }).toContain('Results');
+    await expect.poll(() => page.evaluate(() => window.__SMS__!.loop.running)).toBe(false);
     // A key mashed the moment the results appear must not skip them.
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(200);
+    await page.evaluate(() => window.__SMS__!.loop.wake(true));
+    await page.waitForTimeout(300);
     expect(await activeScenes(page)).toContain('Results');
     await page.waitForTimeout(1000);
     await page.keyboard.press('Enter');
