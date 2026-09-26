@@ -113,8 +113,9 @@ nothing, there was no score, no goal and no ending. This version finishes the de
 - **Escalation**: alert levels bring helicopter gunfire, submarine torpedoes and more military traffic.
 - **More to do**: combos and score, spin parries, a three-hit ferry with passengers, balloonists who fall into the sea,
   cargo planes that drop crates, swimmers and divers who flee, moored buoys, bubbles, splashes and ripples.
-- **Modern controls and presentation**: gamepad support, a floating touch joystick, responsive scaling for any screen,
-  a pause menu, music and sound toggles, and the wind/underwater ambience the original prepared but never played.
+- **Modern controls and presentation**: gamepad support, a floating touch joystick, a layout that adapts to any screen
+  shape (landscape, portrait or anything between), a pause menu, music and sound toggles, and the wind/underwater
+  ambience the original prepared but never played.
 
 Bugs fixed along the way:
 

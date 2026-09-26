@@ -86,6 +86,8 @@ export class GameScene extends Phaser.Scene {
       this.scale.off('resize', this.fitCamera, this);
       this.game.events.off(Phaser.Core.Events.BLUR, this.onBlur, this);
       this.sfx.stopAmbience();
+      // The animation manager is shared by all scenes; don't leave it in slow motion.
+      this.anims.globalTimeScale = 1;
     });
 
     this.scene.launch('Hud');
@@ -120,6 +122,7 @@ export class GameScene extends Phaser.Scene {
     if (this.ended || paused === this.paused) return;
     this.paused = paused;
     if (paused) this.pausedFrame = this.game.loop.frame;
+    else this.controls.muteGamepadBriefly();
     this.controls.clear();
     if (paused) this.scene.pause();
     else this.scene.resume();

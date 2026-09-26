@@ -1,22 +1,51 @@
-import { expect, test } from '@playwright/test';
-import { activeScenes, openMenu, sim, trackErrors } from './helpers';
+import { expect, test, type Page } from '@playwright/test';
+import { activeScenes, openMenu, sim, trackErrors, waitForSteps } from './helpers';
 
-test('plays with touch controls on a phone', async ({ page }) => {
+const touchVisible = (page: Page) =>
+  page.evaluate(() => (window.__SMS__!.scene.getScene('Hud') as unknown as { touchLayer: { visible: boolean } }).touchLayer.visible);
+
+async function tapPlay(page: Page): Promise<void> {
+  // Play is always centred horizontally; find it through the menu scene rather than guessing its height.
+  const point = await page.evaluate(() => {
+    const menu = window.__SMS__!.scene.getScene('Menu');
+    const play = menu.children.list
+      .flatMap((o) => ('list' in o ? (o as unknown as { list: Phaser.GameObjects.GameObject[] }).list : [o]))
+      .flatMap((o) => ('list' in o ? (o as unknown as { list: Phaser.GameObjects.GameObject[] }).list : [o]))
+      .find((o) => (o as Phaser.GameObjects.Image).texture?.key === 'playbutton') as Phaser.GameObjects.Image;
+    const m = play.getWorldTransformMatrix();
+    return { x: m.tx, y: m.ty };
+  });
+  await page.touchscreen.tap(point.x, point.y);
+  await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
+}
+
+test('plays with touch controls on a phone in landscape', async ({ page }) => {
   const errors = trackErrors(page);
   await openMenu(page);
-  const viewport = page.viewportSize()!;
-  // The "RELEASE ME!" button sits in the middle of the menu.
-  await page.touchscreen.tap(viewport.width / 2, viewport.height * 0.47);
-  await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
-
-  const touchVisible = () =>
-    page.evaluate(() => (window.__SMS__!.scene.getScene('Hud') as unknown as { touchLayer: { visible: boolean } }).touchLayer.visible);
-  await expect.poll(touchVisible).toBe(true);
+  await tapPlay(page);
+  await expect.poll(() => touchVisible(page)).toBe(true);
 
   // The squid starts in the sky with one air lunge available; tap LUNGE (bottom right).
   await sim(page, 'sim.player.canAirLunge = true; sim.teleportPlayer(3800, 900);');
+  const viewport = page.viewportSize()!;
   const zoom = await page.evaluate(() => window.__SMS__!.scene.getScene('Hud').cameras.main.zoom);
   await page.touchscreen.tap(viewport.width - 70 * zoom, viewport.height - 62 * zoom);
   await expect.poll(() => sim<boolean>(page, 'return sim.player.canAirLunge;')).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('plays in portrait too', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.setViewportSize({ width: 412, height: 915 });
+  await openMenu(page);
+  await tapPlay(page);
+  await waitForSteps(page, 60);
+  expect(await sim<boolean>(page, 'return game.paused;')).toBe(false);
+  await expect.poll(() => touchVisible(page)).toBe(true);
+  // The world view keeps the squid a sensible size: at least ~540 world units across.
+  const view = await sim<{ w: number; h: number }>(page, 'const c = game.cameras.main; return { w: c.width / c.zoom, h: c.height / c.zoom };');
+  expect(view.w).toBeGreaterThanOrEqual(539);
+  expect(view.w).toBeLessThan(700);
+  expect(view.h).toBeGreaterThan(view.w);
   expect(errors).toEqual([]);
 });

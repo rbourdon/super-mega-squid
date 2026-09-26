@@ -26,6 +26,8 @@ export class InputController {
 
   private readonly pending: Record<Action, boolean> = { lunge: false, spin: false, eggs: false };
   private readonly keys: Record<string, Phaser.Input.Keyboard.Key> = {};
+  /** Game loop frame until which gamepad presses are ignored (see muteGamepadBriefly). */
+  private gamepadMutedUntil = -1;
 
   constructor(private readonly scene: Phaser.Scene) {
     if (isTouchFirst(scene.sys.game)) this.lastDevice = 'touch';
@@ -55,6 +57,7 @@ export class InputController {
     if (gamepad) {
       gamepad.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
         this.lastDevice = 'gamepad';
+        if (scene.game.loop.frame < this.gamepadMutedUntil) return;
         switch (button.index) {
           case 0: // A / Cross
           case 7: // right trigger
@@ -140,6 +143,15 @@ export class InputController {
     };
     this.pending.lunge = this.pending.spin = this.pending.eggs = false;
     return frame;
+  }
+
+  /**
+   * A paused scene stops polling its gamepads, so a button still held from the
+   * pause menu (Start, B to resume, A on RESUME) looks like a fresh press the
+   * moment the game resumes. Ignore presses for the next couple of frames.
+   */
+  muteGamepadBriefly(): void {
+    this.gamepadMutedUntil = this.scene.game.loop.frame + 3;
   }
 
   clear(): void {

@@ -90,7 +90,13 @@ export class Simulation {
     this.playerCtx = {
       rng: this.rng,
       emit: (e) => this.emit(e),
-      launchEgg: (x, y, vx, vy) => this.eggs.push(new Egg(this.world, x, y, vx, vy, this.rng.range(-8, 8))),
+      launchEgg: (x, y, vx, vy) => {
+        // With the squid's back against rock, lay the egg from the head instead of inside the wall.
+        const clear = this.terrain.isClear(x, y, 11);
+        const ex = clear ? x : this.player.x;
+        const ey = clear ? y : this.player.y;
+        this.eggs.push(new Egg(this.world, ex, ey, vx, vy, this.rng.range(-8, 8)));
+      },
     };
     const sim = this;
     this.enemyCtx = {
@@ -346,7 +352,8 @@ export class Simulation {
   }
 
   private damageEnemy(enemy: Enemy, byEgg: boolean): void {
-    if (enemy.hitCooldown > 0) return;
+    // The cooldown stops one charge from counting as several hits; an egg is always its own hit.
+    if (enemy.hitCooldown > 0 && !byEgg) return;
     enemy.hp -= 1;
     if (enemy.hp > 0) {
       enemy.hitCooldown = 0.5;

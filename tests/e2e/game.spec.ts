@@ -56,6 +56,10 @@ test.describe('Super Mega Squid', () => {
     await expect.poll(() => activeScenes(page)).toContain('Game');
     await sim(page, 'sim.rules.rage = 1;');
     await expect.poll(() => activeScenes(page), { timeout: 30_000 }).toContain('Results');
+    // A key mashed the moment the results appear must not skip them.
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(200);
+    expect(await activeScenes(page)).toContain('Results');
     await page.waitForTimeout(1000);
     await page.keyboard.press('Enter');
     await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);

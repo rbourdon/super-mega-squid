@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ENEMIES, PLAYER, SPAWN, WORLD } from '../../src/config';
 import { NO_INPUT, type InputFrame, type SimEvent } from '../../src/sim/events';
 import { Projectile } from '../../src/sim/projectile';
+import { Egg } from '../../src/sim/props';
 import { Rng } from '../../src/sim/rng';
 import { Simulation, type SimulationOptions } from '../../src/sim/simulation';
 
@@ -296,5 +297,32 @@ describe('game flow', () => {
     expect(p.y).toBeLessThan(WORLD.height);
     expect(sim.terrain.isSolid(p.x, p.y)).toBe(false);
     expect(seen.size).toBeGreaterThan(20);
+  });
+});
+
+describe('egg bombs near rock', () => {
+  it('are never laid inside the terrain', () => {
+    const sim = makeSim();
+    // Squid in the water with its back against the left cliff, facing away from it.
+    let x = 40;
+    while (!sim.terrain.isClear(x, 2000, 16)) x += 2;
+    expect(sim.terrain.isSolid(x - 30, 2000)).toBe(true);
+    sim.teleportPlayer(x, 2000);
+    sim.player.body.setAngle(0);
+    run(sim, 1, (i) => ({ ...NO_INPUT, eggs: i === 0 }));
+    expect(sim.eggs.length).toBeGreaterThan(0);
+    for (const egg of sim.eggs) expect(sim.terrain.isSolid(egg.x, egg.y)).toBe(false);
+  });
+
+  it('each egg damages a multi-hit ferry, even right after another hit', () => {
+    const sim = makeSim({ population: 10 });
+    sim.teleportPlayer(OPEN_WATER.x - 300, 2300);
+    const ferry = sim.spawnEnemy('ferry', OPEN_WATER.x, 1450, 1);
+    run(sim, 1);
+    ferry.hitCooldown = 0.5;
+    const hp = ferry.hp;
+    sim.eggs.push(new Egg(sim.world, ferry.x, ferry.y + 40, 0, -200, 0));
+    run(sim, 0.5);
+    expect(ferry.hp).toBeLessThan(hp);
   });
 });

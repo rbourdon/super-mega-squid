@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { audio } from '../audio';
 import { OBJECTIVE, PLAYER, RAGE } from '../config';
 import type { Action } from '../input';
-import { formatScore, shadowText, textButton, textStyle, uiMetrics, type TextButton } from '../ui/layout';
+import { formatScore, onTap, shadowText, textButton, textStyle, uiMetrics, type TextButton } from '../ui/layout';
 import type { GameScene } from './GameScene';
 
 const ALERT_MESSAGES = [
@@ -41,6 +41,9 @@ export class HudScene extends Phaser.Scene {
   private gameScene!: GameScene;
   private vw = 960;
   private vh = 540;
+  /** Width of the rage bar and height of the combo meter; both adapt to narrow screens. */
+  private barWidth = 240;
+  private comboBarY = 68;
 
   private rageBar!: Phaser.GameObjects.Graphics;
   private rageLabel!: Phaser.GameObjects.Text;
@@ -68,7 +71,6 @@ export class HudScene extends Phaser.Scene {
   private stickOrigin = { x: 0, y: 0 };
   private touchButtons: TouchButton[] = [];
   private pauseButton!: Phaser.GameObjects.Image;
-  private rotateNotice!: Phaser.GameObjects.Container;
 
   private pauseLayer!: Phaser.GameObjects.Container;
   private pauseButtons: TextButton[] = [];
@@ -206,7 +208,7 @@ export class HudScene extends Phaser.Scene {
     }
 
     this.pauseButton = this.add.image(0, 0, 'pausebutton').setInteractive().setAlpha(0.9);
-    this.pauseButton.on('pointerup', () => this.gameScene.setPaused(true));
+    onTap(this.pauseButton, () => this.gameScene.setPaused(true));
     this.touchLayer.add(this.pauseButton);
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
@@ -245,10 +247,6 @@ export class HudScene extends Phaser.Scene {
     this.input.on('pointerup', release);
     this.input.on('pointerupoutside', release);
 
-    // Interactive so taps can't reach the (paused) menu underneath.
-    const notice = this.add.rectangle(0, 0, 10, 10, 0x0b1c22, 0.92).setOrigin(0).setInteractive();
-    const noticeText = shadowText(this, 0, 0, 'Rotate your device\nto landscape', 30).setAlign('center').setOrigin(0.5);
-    this.rotateNotice = this.add.container(0, 0, [notice, noticeText]).setVisible(false);
   }
 
   private createPauseMenu(): void {
@@ -293,14 +291,20 @@ export class HudScene extends Phaser.Scene {
     cam.setZoom(zoom);
     cam.setScroll(0, 0);
 
+    // On narrow (portrait) screens the score drops below the rage bar and humans counter.
+    const narrow = vw < 720;
+    this.barWidth = narrow ? Math.min(240, vw * 0.42) : 240;
+    const scoreY = narrow ? 58 : 8;
+    this.comboBarY = scoreY + 60;
     this.rageLabel.setPosition(22, 17);
     this.humansIcon.setPosition(vw - 16, 12);
     this.humansText.setPosition(vw - 54, 10);
     this.humansCaption.setPosition(vw - 54, 44);
-    this.scoreText.setPosition(vw / 2, 8);
-    this.comboText.setPosition(vw / 2, 42);
-    this.banner.setPosition(vw / 2, vh * 0.3);
-    this.hint.setPosition(vw / 2, vh - 70);
+    this.scoreText.setPosition(vw / 2, scoreY);
+    this.comboText.setPosition(vw / 2, scoreY + 34);
+    this.banner.setPosition(vw / 2, vh * 0.3).setWordWrapWidth(vw - 40);
+    // Above the touch buttons on narrow screens, where they span most of the width.
+    this.hint.setPosition(vw / 2, narrow ? vh - 230 : vh - 70).setWordWrapWidth(vw - 40);
     this.abilities.forEach((slot, i) => {
       const x = vw / 2 + (i - 1) * 110;
       slot.label.setPosition(x, vh - 44);
@@ -314,15 +318,8 @@ export class HudScene extends Phaser.Scene {
     this.pauseButton.setPosition(vw - 40, 96);
     this.resetStick();
 
-    const [notice, noticeText] = this.rotateNotice.list as [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Text];
-    notice.setSize(vw, vh);
-    notice.input?.hitArea.setTo(0, 0, vw, vh);
-    noticeText.setPosition(vw / 2, vh / 2);
-
     const [dim, title] = this.pauseLayer.list as [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Text];
     dim.setSize(vw, vh);
-    // Resize the click-blocking area too; it is captured when made interactive.
-    dim.input?.hitArea.setTo(0, 0, vw, vh);
     const spacing = 58;
     const top = vh / 2 - ((this.pauseButtons.length - 1) * spacing) / 2 + 40;
     title.setPosition(vw / 2, top - 80);
@@ -341,6 +338,9 @@ export class HudScene extends Phaser.Scene {
 
   private showPauseMenu(paused: boolean): void {
     this.pauseLayer.setVisible(paused);
+    // Music may have been toggled with M during play.
+    this.pauseButtons[2].setLabel(this.musicLabel());
+    this.pauseButtons[3].setLabel(this.soundLabel());
     this.pauseIndex = 0;
     this.pauseButtons.forEach((b, i) => b.setSelected(paused && i === 0 && this.gameScene.controls.lastDevice !== 'touch'));
     if (paused) {
@@ -403,7 +403,7 @@ export class HudScene extends Phaser.Scene {
     this.rageFlash = Math.max(0, this.rageFlash - dt * 3);
     const low = rules.rage < RAGE.max * 0.25 && rules.state === 'playing';
     const pulse = low ? 0.5 + 0.5 * Math.sin(this.time.now / 90) : 0;
-    const barW = 240;
+    const barW = this.barWidth;
     const fill = (this.displayedRage / RAGE.max) * (barW - 4);
     const g = this.rageBar;
     g.clear();
@@ -433,7 +433,7 @@ export class HudScene extends Phaser.Scene {
       const multiplier = rules.multiplier > 1 ? `  x${rules.multiplier}` : '';
       this.comboText.setText(`COMBO ${rules.combo}${multiplier}`).setVisible(true);
       const w = 130 * (rules.comboTimeLeft / RAGE.comboWindow);
-      cb.fillStyle(0xffd34d, 0.9).fillRect(this.vw / 2 - w / 2, 68, w, 4);
+      cb.fillStyle(0xffd34d, 0.9).fillRect(this.vw / 2 - w / 2, this.comboBarY, w, 4);
     } else {
       this.comboText.setVisible(false);
     }
@@ -442,14 +442,8 @@ export class HudScene extends Phaser.Scene {
     this.updateHint(dt);
     this.updateOrbs(dt);
 
-    const touch = game.controls.lastDevice === 'touch';
-    this.touchLayer.setVisible(touch && !game.ended);
-    // Phones in portrait get a rotate prompt, and the game waits behind it.
-    const portrait = touch && this.scale.height > this.scale.width;
-    this.rotateNotice.setVisible(portrait);
-    if (portrait && !game.paused && !game.ended) game.setPaused(true);
+    this.touchLayer.setVisible(game.controls.lastDevice === 'touch' && !game.ended);
     this.children.bringToTop(this.pauseLayer);
-    this.children.bringToTop(this.rotateNotice);
   }
 
   private updateAbilities(lunge: number, spin: number, eggs: number, wet: boolean, airLunge: boolean): void {
@@ -495,7 +489,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private updateOrbs(dt: number): void {
-    const tx = 30 + (this.displayedRage / RAGE.max) * 220;
+    const tx = 30 + (this.displayedRage / RAGE.max) * (this.barWidth - 20);
     const ty = 27;
     for (let i = this.orbs.length - 1; i >= 0; i--) {
       const orb = this.orbs[i];
