@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1c22" />
+    <meta name="description" content="Super Mega Squid: Terror of the Deep. Leap, lunge and spin your way through a seaside town as a very angry squid." />
+    <title>Super Mega Squid: Terror of the Deep</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0b1c22;
+        overscroll-behavior: none;
+      }
+      #game {
+        position: fixed;
+        inset: 0;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #game canvas {
+        display: block;
+        outline: none;
+      }
+      noscript {
+        color: #fff;
+        font-family: sans-serif;
+        display: block;
+        padding: 2em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <noscript>Super Mega Squid needs JavaScript to run.</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
