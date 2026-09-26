@@ -42,7 +42,7 @@ export class MenuScene extends Phaser.Scene {
         0,
         0,
         [
-          'KEYBOARD   WASD / Arrows swim   ·   SPACE lunge   ·   Q spin   ·   E egg bombs   ·   ESC pause',
+          'KEYBOARD   WASD / Arrows swim   ·   SPACE lunge   ·   Q spin   ·   E egg bombs   ·   ESC pause   ·   F fullscreen',
           'GAMEPAD   Left stick swim   ·   A lunge   ·   B / X spin   ·   Y egg bombs   ·   START pause',
           'TOUCH   Drag on the left to swim   ·   Tap the buttons on the right',
         ].join('\n'),
@@ -67,6 +67,11 @@ export class MenuScene extends Phaser.Scene {
       .setAlpha(0.75);
     const musicToggle = this.add.text(0, 0, '', textStyle(16)).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     const soundToggle = this.add.text(0, 0, '', textStyle(16)).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    const fullscreenToggle = this.add
+      .text(0, 0, 'FULLSCREEN', textStyle(16))
+      .setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(this.scale.fullscreen.available);
     const refreshToggles = () => {
       musicToggle.setText(`MUSIC ${sfx.musicOn ? 'ON' : 'OFF'}`);
       soundToggle.setText(`SOUND ${sfx.sfxOn ? 'ON' : 'OFF'}`);
@@ -80,8 +85,10 @@ export class MenuScene extends Phaser.Scene {
       sfx.toggleSfx();
       refreshToggles();
     });
+    // Fullscreen must be requested from a user gesture, which pointerup is.
+    fullscreenToggle.on('pointerup', () => this.scale.toggleFullscreen());
 
-    ui.add([title, subtitle, play, recordText, controls, tips, logo, credits, musicToggle, soundToggle]);
+    ui.add([title, subtitle, play, recordText, controls, tips, logo, credits, musicToggle, soundToggle, fullscreenToggle]);
 
     const layout = () => {
       const { width, height } = this.scale;
@@ -101,6 +108,7 @@ export class MenuScene extends Phaser.Scene {
       credits.setPosition(68, vh - 12);
       musicToggle.setPosition(vw - 16, 12);
       soundToggle.setPosition(vw - 16, 36);
+      fullscreenToggle.setPosition(vw - 16, 60);
     };
     layout();
     this.scale.on('resize', layout);
@@ -111,6 +119,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-ENTER', () => this.startGame());
     this.input.keyboard?.on('keydown-SPACE', () => this.startGame());
+    this.input.keyboard?.on('keydown-F', () => this.scale.toggleFullscreen());
     this.input.keyboard?.on('keydown-M', () => {
       sfx.toggleMusic();
       refreshToggles();

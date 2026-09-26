@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { OBJECTIVE } from '../config';
 import { formatScore, formatTime, shadowText, textButton, textStyle, uiMetrics, type TextButton } from '../ui/layout';
 import type { GameOverInfo, GameScene } from './GameScene';
 
@@ -38,7 +39,7 @@ export class ResultsScene extends Phaser.Scene {
     panel.add(this.add.text(0, -140, subtitle, textStyle(18)).setOrigin(0.5).setAlpha(0.85));
 
     const rows: Array<[string, string]> = [
-      ['HUMANS EATEN', `${info.humans}`],
+      ['HUMANS EATEN', `${info.humans} / ${OBJECTIVE.population}`],
       ['CREATURES DEVOURED', `${info.kills}`],
       ['BEST COMBO', `${info.bestCombo}`],
       ['TIME', formatTime(info.time)],

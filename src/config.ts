@@ -109,7 +109,7 @@ export const EGG = {
 export const RAGE = {
   max: 200,
   /** Original: -1 every 12 frames. */
-  drainPerSecond: 8,
+  drainPerSecond: 7,
   /** Drain multiplier grows linearly by this much per minute played. */
   drainRampPerMinute: 0.15,
   maxDrainMultiplier: 2,

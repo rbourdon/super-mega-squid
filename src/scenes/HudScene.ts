@@ -89,7 +89,6 @@ export class HudScene extends Phaser.Scene {
     this.hintTimer = 9;
     this.shownScore = 0;
     this.stickPointer = null;
-    this.input.addPointer(3);
 
     this.createStatus();
     this.createTouchControls();
@@ -106,8 +105,8 @@ export class HudScene extends Phaser.Scene {
     };
     const onPause = (paused: boolean) => this.showPauseMenu(paused);
     const onGameOver = () => {
-      this.touchLayer.setVisible(false);
-      this.hint.setVisible(false);
+      this.setTouchControlsVisible(false);
+      this.hintTimer = 0;
     };
     gameEvents.on('rage-orbs', onOrbs);
     gameEvents.on('alert', onAlert);
@@ -261,8 +260,9 @@ export class HudScene extends Phaser.Scene {
       ['RESTART', () => this.gameScene.restart()],
       [this.musicLabel(), () => this.pauseButtons[2].setLabel(this.musicLabel(sfx.toggleMusic()))],
       [this.soundLabel(), () => this.pauseButtons[3].setLabel(this.soundLabel(sfx.toggleSfx()))],
-      ['QUIT TO MENU', () => this.gameScene.quitToMenu()],
     ];
+    if (this.scale.fullscreen.available) entries.push(['FULLSCREEN', () => this.scale.toggleFullscreen()]);
+    entries.push(['QUIT TO MENU', () => this.gameScene.quitToMenu()]);
     for (const [label, action] of entries) {
       const button = textButton(this, 0, 0, label, action, 300, 50);
       this.pauseButtons.push(button);
@@ -321,8 +321,10 @@ export class HudScene extends Phaser.Scene {
     dim.setSize(vw, vh);
     // Resize the click-blocking area too; it is captured when made interactive.
     dim.input?.hitArea.setTo(0, 0, vw, vh);
-    title.setPosition(vw / 2, vh / 2 - 170);
-    this.pauseButtons.forEach((b, i) => b.container.setPosition(vw / 2, vh / 2 - 90 + i * 62));
+    const spacing = 58;
+    const top = vh / 2 - ((this.pauseButtons.length - 1) * spacing) / 2 + 40;
+    title.setPosition(vw / 2, top - 80);
+    this.pauseButtons.forEach((b, i) => b.container.setPosition(vw / 2, top + i * spacing));
   }
 
   private resetStick(): void {
@@ -439,11 +441,19 @@ export class HudScene extends Phaser.Scene {
     this.updateOrbs(dt);
 
     const touch = game.controls.lastDevice === 'touch';
-    this.touchLayer.setVisible(touch && !game.ended);
+    this.setTouchControlsVisible(touch && !game.ended);
     const portrait = touch && this.scale.height > this.scale.width;
     this.rotateNotice.setVisible(portrait);
     this.children.bringToTop(this.rotateNotice);
     this.children.bringToTop(this.pauseLayer);
+  }
+
+  /** Hidden buttons must not catch clicks, so input is toggled along with visibility. */
+  private setTouchControlsVisible(visible: boolean): void {
+    if (this.touchLayer.visible === visible) return;
+    this.touchLayer.setVisible(visible);
+    for (const button of this.touchButtons) if (button.image.input) button.image.input.enabled = visible;
+    if (this.pauseButton.input) this.pauseButton.input.enabled = visible;
   }
 
   private updateAbilities(lunge: number, spin: number, eggs: number, wet: boolean, airLunge: boolean): void {
@@ -474,6 +484,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private updateHint(dt: number): void {
+    this.hint.setVisible(this.hintTimer > 0);
     if (this.hintTimer <= 0) return;
     this.hintTimer -= dt;
     const device = this.gameScene.controls.lastDevice;

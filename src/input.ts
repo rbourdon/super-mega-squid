@@ -45,6 +45,7 @@ export class InputController {
       keyboard.on('keydown-ESC', () => this.onPause?.());
       keyboard.on('keydown-P', () => this.onPause?.());
       keyboard.on('keydown-M', () => this.onMute?.());
+      keyboard.on('keydown-F', () => scene.scale.toggleFullscreen());
       keyboard.on('keydown', () => {
         this.lastDevice = 'keyboard';
       });
