@@ -146,7 +146,9 @@ async function loadFont(): Promise<void> {
     const face = new FontFace('Rocket Propelled', 'url(assets/fonts/rockprp.ttf)');
     document.fonts.add(await face.load());
   } catch {
-    // Fall back to the next font in FONT_FAMILY.
+    // The host may refuse font files; use an @font-face the page declares, if any,
+    // and otherwise the next font in FONT_FAMILY.
+    await document.fonts.load(`32px ${FONT_FAMILY}`).catch(() => undefined);
   }
 }
 

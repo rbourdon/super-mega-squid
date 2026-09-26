@@ -5,6 +5,19 @@ import { HudScene } from './scenes/HudScene';
 import { MenuScene } from './scenes/MenuScene';
 import { ResultsScene } from './scenes/ResultsScene';
 
+/**
+ * Embedded pages (iframes without allow="gamepad") can block the Gamepad API,
+ * and Phaser polls it every frame without a guard, so only enable it when usable.
+ */
+function gamepadsAvailable(): boolean {
+  try {
+    navigator.getGamepads?.();
+    return typeof navigator.getGamepads === 'function';
+  } catch {
+    return false;
+  }
+}
+
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
@@ -19,7 +32,7 @@ const game = new Phaser.Game({
     roundPixels: false,
   },
   input: {
-    gamepad: true,
+    gamepad: gamepadsAvailable(),
     activePointers: 4,
   },
   scene: [BootScene, MenuScene, GameScene, HudScene, ResultsScene],
