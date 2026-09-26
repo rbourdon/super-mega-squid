@@ -105,7 +105,7 @@ export class HudScene extends Phaser.Scene {
     };
     const onPause = (paused: boolean) => this.showPauseMenu(paused);
     const onGameOver = () => {
-      this.setTouchControlsVisible(false);
+      this.touchLayer.setVisible(false);
       this.hintTimer = 0;
     };
     gameEvents.on('rage-orbs', onOrbs);
@@ -245,7 +245,8 @@ export class HudScene extends Phaser.Scene {
     this.input.on('pointerup', release);
     this.input.on('pointerupoutside', release);
 
-    const notice = this.add.rectangle(0, 0, 10, 10, 0x0b1c22, 0.92).setOrigin(0);
+    // Interactive so taps can't reach the (paused) menu underneath.
+    const notice = this.add.rectangle(0, 0, 10, 10, 0x0b1c22, 0.92).setOrigin(0).setInteractive();
     const noticeText = shadowText(this, 0, 0, 'Rotate your device\nto landscape', 30).setAlign('center').setOrigin(0.5);
     this.rotateNotice = this.add.container(0, 0, [notice, noticeText]).setVisible(false);
   }
@@ -315,6 +316,7 @@ export class HudScene extends Phaser.Scene {
 
     const [notice, noticeText] = this.rotateNotice.list as [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Text];
     notice.setSize(vw, vh);
+    notice.input?.hitArea.setTo(0, 0, vw, vh);
     noticeText.setPosition(vw / 2, vh / 2);
 
     const [dim, title] = this.pauseLayer.list as [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Text];
@@ -441,19 +443,13 @@ export class HudScene extends Phaser.Scene {
     this.updateOrbs(dt);
 
     const touch = game.controls.lastDevice === 'touch';
-    this.setTouchControlsVisible(touch && !game.ended);
+    this.touchLayer.setVisible(touch && !game.ended);
+    // Phones in portrait get a rotate prompt, and the game waits behind it.
     const portrait = touch && this.scale.height > this.scale.width;
     this.rotateNotice.setVisible(portrait);
-    this.children.bringToTop(this.rotateNotice);
+    if (portrait && !game.paused && !game.ended) game.setPaused(true);
     this.children.bringToTop(this.pauseLayer);
-  }
-
-  /** Hidden buttons must not catch clicks, so input is toggled along with visibility. */
-  private setTouchControlsVisible(visible: boolean): void {
-    if (this.touchLayer.visible === visible) return;
-    this.touchLayer.setVisible(visible);
-    for (const button of this.touchButtons) if (button.image.input) button.image.input.enabled = visible;
-    if (this.pauseButton.input) this.pauseButton.input.enabled = visible;
+    this.children.bringToTop(this.rotateNotice);
   }
 
   private updateAbilities(lunge: number, spin: number, eggs: number, wet: boolean, airLunge: boolean): void {
@@ -484,8 +480,8 @@ export class HudScene extends Phaser.Scene {
   }
 
   private updateHint(dt: number): void {
-    this.hint.setVisible(this.hintTimer > 0);
-    if (this.hintTimer <= 0) return;
+    this.hint.setVisible(this.hintTimer > 0 && !this.gameScene.paused);
+    if (this.hintTimer <= 0 || this.gameScene.paused) return;
     this.hintTimer -= dt;
     const device = this.gameScene.controls.lastDevice;
     const controls =

@@ -99,6 +99,12 @@ export class GameScene extends Phaser.Scene {
     // Show at least 960x540 world pixels (the original showed 800x480).
     cam.setZoom(uiMetrics(width, height).zoom);
     cam.centerOn(this.camX, this.camY);
+    // Redraw size-dependent layers now: a paused scene doesn't run update().
+    if (this.backdrop && this.water) {
+      const view = this.visibleWorld();
+      this.backdrop.update(0, view, this.camX);
+      this.water.update(this.sim.water, view);
+    }
   }
 
   private onBlur(): void {

@@ -42,11 +42,11 @@ export class MenuScene extends Phaser.Scene {
         0,
         0,
         [
-          'KEYBOARD   WASD / Arrows swim   ·   SPACE lunge   ·   Q spin   ·   E egg bombs   ·   ESC pause   ·   F fullscreen',
-          'GAMEPAD   Left stick swim   ·   A lunge   ·   B / X spin   ·   Y egg bombs   ·   START pause',
-          'TOUCH   Drag on the left to swim   ·   Tap the buttons on the right',
+          'KEYBOARD   WASD / Arrows swim  ·  SPACE lunge  ·  Q spin  ·  E eggs  ·  ESC pause  ·  F fullscreen',
+          'GAMEPAD   Left stick swim  ·  A lunge  ·  B / X spin  ·  Y eggs  ·  START pause',
+          'TOUCH   Drag on the left to swim  ·  Tap the buttons on the right',
         ].join('\n'),
-        textStyle(14, '#ffffff', { align: 'center', lineSpacing: 8 }),
+        textStyle(14, '#ffffff', { align: 'center', lineSpacing: 8, wordWrap: { width: 920 } }),
       )
       .setOrigin(0.5)
       .setAlpha(0.9);
@@ -55,7 +55,7 @@ export class MenuScene extends Phaser.Scene {
         0,
         0,
         'Leap from the sea and lunge to snatch birds, balloons and aircraft. Spin to parry bullets and torpedoes.\nBeware of electric eels. Eating humans puts the military on alert.',
-        textStyle(13, '#ffffff', { align: 'center', lineSpacing: 6 }),
+        textStyle(13, '#ffffff', { align: 'center', lineSpacing: 6, wordWrap: { width: 920 } }),
       )
       .setOrigin(0.5)
       .setAlpha(0.75);
