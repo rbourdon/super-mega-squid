@@ -9,10 +9,10 @@
  *  - Renders a small preview for the level select screen.
  *  - Flattens the translucent sky gradient over white into an opaque strip.
  *
- * Run with `npm run assets:level`. Outputs are committed, so this only needs to
- * be re-run when the source art in `art/` changes.
+ * Run with `npm run assets:level` (optionally followed by level ids). Outputs are
+ * committed, so this only needs to be re-run when the source art in `art/` changes.
  */
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
@@ -21,9 +21,10 @@ import { marchingSquares, type Point } from '../src/sim/geom/marchingSquares';
 import { removeCloseVertices, signedArea, simplifyLoop } from '../src/sim/geom/polygon';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-/** Level ids, in the order they are offered. Each has art/levels/<id>/{worldpixel,veggiespixel}.png. */
-const LEVEL_IDS = ['cove', 'arches'];
-const TILE = 512;
+/** Every level in art/levels/<id>/{worldpixel,veggiespixel}.png, or just the ids given on the command line. */
+const LEVEL_IDS = process.argv.length > 2 ? process.argv.slice(2) : readdirSync(join(root, 'art/levels')).sort();
+/** Big enough to keep the file count down, small enough for any GPU. */
+const TILE = 1024;
 /** Tiles overlap their right/bottom neighbours so no seams show when the camera zooms. */
 const TILE_OVERLAP = 2;
 const GRID = 4; // sampling step for collision extraction, in pixels

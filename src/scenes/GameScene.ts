@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { audio, type AudioDirector } from '../audio';
+import { tileKey } from '../assets';
 import { PHYSICS, RAGE } from '../config';
 import { InputController } from '../input';
-import { levelById, type LevelDef } from '../level/levels';
+import { LEVELS, levelById, type LevelDef } from '../level/levels';
 import { Backdrop } from '../render/Backdrop';
 import { Effects } from '../render/Effects';
 import { EntityViews } from '../render/EntityViews';
@@ -11,7 +12,7 @@ import { WaterView } from '../render/WaterView';
 import type { SimEvent } from '../sim/events';
 import { Simulation } from '../sim/simulation';
 import { recordRun, save, type RunResult } from '../storage';
-import { uiMetrics } from '../ui/layout';
+import { textStyle, uiMetrics } from '../ui/layout';
 
 const MAX_STEPS_PER_FRAME = 5;
 const HUMAN_POPUP = '#ffd34d';
@@ -61,6 +62,46 @@ export class GameScene extends Phaser.Scene {
   init(data: GameStartData): void {
     this.level = levelById(data?.level);
     save({ lastLevel: this.level.id });
+  }
+
+  /** Load this level's terrain tiles (and free any other level's), with a progress bar. */
+  preload(): void {
+    for (const other of LEVELS) {
+      if (other.id === this.level.id) continue;
+      for (const [tx, ty] of other.data.tiles) {
+        const key = tileKey(other.id, tx, ty);
+        if (this.textures.exists(key)) this.textures.remove(key);
+      }
+    }
+    const dir = `assets/levels/${this.level.id}`;
+    let queued = 0;
+    for (const [tx, ty] of this.level.data.tiles) {
+      const key = tileKey(this.level.id, tx, ty);
+      if (this.textures.exists(key)) continue;
+      this.load.image(key, `${dir}/tile_${tx}_${ty}.png`);
+      queued++;
+    }
+    if (queued === 0) return;
+
+    const { width, height } = this.scale;
+    const zoom = uiMetrics(width, height).zoom;
+    const label = this.add
+      .text(width / 2, height / 2 - 24 * zoom, this.level.name, textStyle(Math.round(32 * zoom)))
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+    const bar = this.add.graphics().setScrollFactor(0);
+    const barWidth = Math.min(420, width * 0.6);
+    const onProgress = (value: number) => {
+      bar.clear();
+      bar.fillStyle(0xffffff, 0.25).fillRect((width - barWidth) / 2, height / 2 + 8 * zoom, barWidth, 10 * zoom);
+      bar.fillStyle(0xffffff, 1).fillRect((width - barWidth) / 2, height / 2 + 8 * zoom, barWidth * value, 10 * zoom);
+    };
+    this.load.on(Phaser.Loader.Events.PROGRESS, onProgress);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      this.load.off(Phaser.Loader.Events.PROGRESS, onProgress);
+      label.destroy();
+      bar.destroy();
+    });
   }
 
   create(): void {
