@@ -1,5 +1,5 @@
 import { Vec2, type Contact, type Fixture, type World } from 'planck';
-import { BUOYS, CRATE, ENEMIES, PHYSICS, PLAYER, PROJECTILES, RAGE, SPAWN, TENTACLES, type EnemyKind } from '../config';
+import { BUOYS, CRATE, ENEMIES, PHYSICS, PLAYER, PROJECTILES, SLOWMO, SPAWN, TENTACLES, type EnemyKind } from '../config';
 import { DEFAULT_LEVEL, type LevelDef } from '../level/levels';
 import { applyStreamlinedWaterForces, applyWaterForces } from './buoyancy';
 import { Enemy, type EnemyContext } from './enemy';
@@ -375,6 +375,13 @@ export class Simulation {
     enemy.alive = false;
     const def = enemy.def;
     const result = this.rules.registerKill(def.points, def.rage, def.human);
+    // Time slows for kills made out of the water (announced first, so the kill's sound is slowed too).
+    if (!this.player.wet && !byEgg && this.slowMoCooldown <= 0) {
+      if (def.death === 'explosion' || def.human || this.rng.chance(SLOWMO.chance)) {
+        this.slowMoCooldown = SLOWMO.cooldown;
+        this.emit({ type: 'slowmo', x: enemy.x, y: enemy.y });
+      }
+    }
     this.emit({
       type: 'kill',
       kind: def.kind,
@@ -398,11 +405,6 @@ export class Simulation {
       if (!this.terrain.isClear(x, y, 20)) continue;
       const swimmer = this.spawnEnemy('swimmer', x, y);
       swimmer.dir = this.rng.sign();
-    }
-
-    if (!this.player.wet && !byEgg && this.slowMoCooldown <= 0 && this.rng.chance(RAGE.slowMoChance)) {
-      this.slowMoCooldown = RAGE.slowMoCooldown;
-      this.emit({ type: 'slowmo' });
     }
   }
 

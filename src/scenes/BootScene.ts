@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { FONT_FAMILY, IMAGES, SHEETS, SOUNDS, previewKey, tileKey } from '../assets';
+import { FONT_FAMILY, IMAGES, SHEETS, SOUNDS, previewKey } from '../assets';
 import { ENEMIES } from '../config';
 import { LEVELS } from '../level/levels';
 import { coverImage } from '../ui/layout';
@@ -51,11 +51,8 @@ export class BootScene extends Phaser.Scene {
         frameHeight: sheet.frameHeight,
       });
     }
-    for (const level of LEVELS) {
-      const dir = `assets/levels/${level.id}`;
-      for (const [tx, ty] of level.data.tiles) this.load.image(tileKey(level.id, tx, ty), `${dir}/tile_${tx}_${ty}.png`);
-      this.load.image(previewKey(level.id), `${dir}/preview.png`);
-    }
+    // Level tiles are loaded when a level starts (see GameScene.preload); only the previews here.
+    for (const level of LEVELS) this.load.image(previewKey(level.id), `assets/levels/${level.id}/preview.png`);
     this.load.image('sky', 'assets/levels/sky.png');
     for (const [key, file] of Object.entries(SOUNDS)) {
       this.load.audio(key, [`assets/audio/${file}.ogg`, `assets/audio/${file}.mp3`]);

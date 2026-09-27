@@ -146,11 +146,26 @@ export const RAGE = {
   drainRampPerMinute: 0.15,
   maxDrainMultiplier: 2,
   comboWindow: 2,
-  slowMoChance: 1 / 7,
-  slowMoCooldown: 3,
-  slowMoScale: 0.2,
-  /** Original recovered 0.01 per frame. */
-  slowMoRecoverPerSecond: 0.6,
+} as const;
+
+/**
+ * Slow motion on kills made out of the water. The original dropped to 0.2 on one
+ * airborne kill in 7 and recovered by 0.01 a frame; that was rare enough to miss.
+ */
+export const SLOWMO = {
+  /** Chance on an airborne kill; wrecks (anything that explodes) and humans always slow time. */
+  chance: 1 / 3,
+  /** Game seconds before it can happen again (slow motion itself takes up under one). */
+  cooldown: 2,
+  scale: 0.2,
+  /** Real seconds held at full slow motion before recovering. */
+  hold: 0.25,
+  /** Original: 0.01 per frame. */
+  recoverPerSecond: 0.6,
+  /** Extra camera zoom at full slow motion. */
+  zoom: 0.12,
+  /** Sound effects play at this rate at full slow motion. */
+  soundRate: 0.6,
 } as const;
 
 export const OBJECTIVE = {

@@ -114,3 +114,31 @@ describe('Arch Rock', () => {
     expect(sim.player.canAirLunge).toBe(true);
   });
 });
+
+describe('the other generated levels', () => {
+  it('lets the squid swim under the volcano on Fire Isle, past the vents', () => {
+    const sim = new Simulation({ seed: 11, spawning: false, level: levelById('fireisle') });
+    expect(sim.terrain.isSolid(4990, 800)).toBe(true); // the cone
+    sim.teleportPlayer(3300, 2540, 300, 0);
+    // Keep level, between the roots' teeth and the vents.
+    run(sim, 6, () => move(1, sim.player.y > 2540 ? -0.3 : 0.1));
+    expect(sim.player.x).toBeGreaterThan(6100);
+  });
+
+  it('lets the squid swim under a broken needle, between it and its stump', () => {
+    const sim = new Simulation({ seed: 11, spawning: false, level: levelById('needles') });
+    expect(sim.terrain.isSolid(4230, 1505)).toBe(true); // the needle, through the surface
+    sim.teleportPlayer(3700, 2320, 300, 0);
+    run(sim, 4, move(1, 0));
+    expect(sim.player.x).toBeGreaterThan(4800);
+  });
+
+  it('roofs the Grotto over open water, and leaves room under the table reef in the Shallows', () => {
+    const grotto = new Terrain(levelById('grotto').data);
+    expect(grotto.isSolid(2000, 800)).toBe(true);
+    expect(grotto.isClear(2000, 1350, 60)).toBe(true);
+    const shallows = new Terrain(levelById('shallows').data);
+    expect(shallows.isSolid(2450, 2050)).toBe(true); // the table
+    expect(shallows.isClear(2250, 2210, 30)).toBe(true); // under it
+  });
+});

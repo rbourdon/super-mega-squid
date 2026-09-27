@@ -154,6 +154,28 @@ describe('eating', () => {
     expect(sim.enemies).toHaveLength(0);
   });
 
+  it('slows time for a wreck made out of the water, but not for kills underwater', () => {
+    const sim = makeSim();
+    const sky = { x: 6000, y: 1150 };
+    expect(sim.terrain.isClear(sky.x, sky.y, 120)).toBe(true);
+    sim.teleportPlayer(sky.x, sky.y, 700, 0);
+    sim.spawnEnemy('balloon', sky.x + 90, sky.y, 0.01);
+    const events = run(sim, 0.4, move(1, 0));
+    const slowmo = events.findIndex((e) => e.type === 'slowmo');
+    const kill = events.findIndex((e) => e.type === 'kill');
+    expect(kill).toBeGreaterThanOrEqual(0);
+    // Announced before the kill, so the kill's own sound plays slowed.
+    expect(slowmo).toBeGreaterThanOrEqual(0);
+    expect(slowmo).toBeLessThan(kill);
+
+    const wet = makeSim();
+    wet.teleportPlayer(OPEN_WATER.x, OPEN_WATER.y, 650, 0);
+    wet.spawnEnemy('shark', OPEN_WATER.x + 90, OPEN_WATER.y, 1);
+    const underwater = run(wet, 0.5, move(1, 0));
+    expect(underwater.some((e) => e.type === 'kill')).toBe(true);
+    expect(underwater.some((e) => e.type === 'slowmo')).toBe(false);
+  });
+
   it('only bumps prey touched slowly', () => {
     const sim = makeSim();
     sim.teleportPlayer(OPEN_WATER.x, OPEN_WATER.y, 80, 0);
