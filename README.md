@@ -112,11 +112,14 @@ empty ones), extracts collision outlines from the terrain's alpha channel with m
 the level select screen, and writes `src/level/<id>.json`. `npm run assets:audio` transcodes the original WAV files to
 Ogg Vorbis and MP3 (needs `ffmpeg`). The outputs are committed, so you only need these after changing files in `art/`.
 
-The Cove is the original 2013 art. Arch Rock is drawn by `npm run assets:arches` (`scripts/generate-arches.ts`) in the
-same style: its rocks are laid out as outlines, cut into stones with a stretched Voronoi pattern, and painted with the
-original palette (light rims, outlines and spots on the stones, dark mortar, orange cracks, moss caps with drips and
-sand). Its seaweed and coral are cut out of the original vegetation layer and replanted. The generator is
-deterministic; after changing it, run `npm run assets:arches` and then `npm run assets:level`.
+The Cove is the original 2013 art. Arch Rock is drawn by `npm run assets:arches` in the same style.
+`scripts/generate-arches.ts` lays its rocks out as hand-shaped outlines, and `scripts/lib/rock-art.ts` paints them like
+the original: craggy stones with outlines, bevels, light rims and spots; dark mortar with strata and shards (under the
+tops of the floating islands, as in the original); orange cracks; thick moss caps with light blobs and flame-shaped
+drips; hanging grass under overhangs; vines that crawl over the rock and hang from it; and sand. Its seaweed, coral,
+shells and trees are cut out of the original art and replanted. Anything thin or hanging goes in the decoration layer,
+so it never becomes collision. The generator is deterministic; after changing it, run `npm run assets:arches` and then
+`npm run assets:level`.
 
 ## What changed from the 2013 version
 
