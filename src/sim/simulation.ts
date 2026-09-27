@@ -286,8 +286,11 @@ export class Simulation {
   private partSpeed(partFixture: Fixture): number {
     const tag = partFixture.getUserData() as PartTag | undefined;
     const headSpeed = speed(this.player.body);
-    if (tag?.part === 'tentacle') return Math.max(headSpeed, speed(partFixture.getBody()));
-    return headSpeed;
+    if (tag?.part !== 'tentacle') return headSpeed;
+    // Tentacles only hurt while they are being swung, in a spin or the thrash after a lunge:
+    // their squirm is fast at the tips but a slow touch should still just nudge prey.
+    const swinging = this.player.spinTimer > 0 || this.player.thrash > 0;
+    return swinging ? Math.max(headSpeed, speed(partFixture.getBody())) : headSpeed;
   }
 
   private onBeginContact(contact: Contact): void {

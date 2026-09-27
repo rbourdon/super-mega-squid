@@ -37,8 +37,10 @@ You only hurt things you hit **fast**: swim hard, lunge or spin your tentacles. 
 
 - **Underwater** you swim freely and can lunge every half second.
 - **In the air** you can only steer sideways and dive, and you get **one lunge** until you touch water or land on rock.
-  Lunge upwards just below the surface to leap high enough to catch birds, balloons and aircraft.
-- **Spin** whips your tentacles around, briefly stops your fall and **parries** bullets and torpedoes.
+  That makes a double lunge: lunge upwards just below the surface to leap out, then lunge again at the top of the leap
+  to reach birds, balloons and aircraft.
+- **Spin** whips your tentacles around, briefly stops your fall and **parries** bullets and torpedoes. Your tentacles
+  only hurt things while they are being swung, in a spin or right after a lunge.
 - **Egg bombs** drop a volley of six eggs that float up through the water and destroy whatever they touch.
 - Eating in quick succession builds a **combo** multiplier for your score.
 

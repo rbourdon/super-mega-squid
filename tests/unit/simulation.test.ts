@@ -73,6 +73,24 @@ describe('squid physics', () => {
     expect(sim.water.level - apex).toBeGreaterThan(300);
   });
 
+  it('leaps much higher with a second lunge at the top of the leap', () => {
+    const leap = (double: boolean) => {
+      const sim = makeSim();
+      sim.teleportPlayer(3600, 1750);
+      let apex = Infinity;
+      let second = false;
+      run(sim, 3, (i) => {
+        apex = Math.min(apex, sim.player.y);
+        const rising = sim.player.body.getLinearVelocity().y < 0;
+        // The second lunge comes once the squid is out of the water and has stopped rising.
+        const lunge = i === 12 || (double && i > 12 && !second && !sim.player.wet && !rising && (second = true));
+        return move(0, -1, { lunge });
+      });
+      return sim.water.level - apex;
+    };
+    expect(leap(true) - leap(false)).toBeGreaterThan(150);
+  });
+
   it('allows only one lunge per airtime, restored by water', () => {
     const sim = makeSim();
     sim.teleportPlayer(3600, 800);

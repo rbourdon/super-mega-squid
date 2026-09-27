@@ -59,16 +59,22 @@ export const PLAYER = {
   /** Rotation controller gain (1/s). */
   turnRate: 16,
   lungeImpulseWater: 820,
-  lungeImpulseAir: 620,
+  /** Original: 14000 in the air against 15000 in water, so the second lunge of a leap counts. */
+  lungeImpulseAir: 760,
   lungeCooldown: 0.42,
-  maxSpeed: 1400,
+  /** High, because a lunge briefly puts the whole squid's momentum in the head (see Player.whip). */
+  maxSpeed: 2200,
   /** Water drag multiplier for the streamlined head. */
   headWaterDrag: 0.5,
-  spinDuration: 10 / 60,
+  spinDuration: 12 / 60,
   spinCooldown: 0.85,
   spinAngularSpeed: 28,
-  spinTentacleBoostWet: 95,
-  spinTentacleBoostDry: 55,
+  /** Sideways lash given to every tentacle segment each step of a spin (px/s), plus chaos and fling. */
+  spinTentacleBoostWet: 230,
+  spinTentacleBoostDry: 110,
+  /** Random kick as a fraction of the boost, and outward fling as a fraction of it. */
+  spinChaos: 0.9,
+  spinFling: 0.45,
   /** Radius around the head in which a spin destroys incoming projectiles. */
   spinParryRadius: 70,
   eggCount: 6,
@@ -83,28 +89,44 @@ export const PLAYER = {
   landSoundSpeed: 160,
 } as const;
 
-/** Tentacle segment sizes (original: 4 tentacles of 4 segments, joined by free pivots). */
+/**
+ * Tentacles: 4, joined by free pivots like the original's, but a third longer, with a
+ * fifth, whippy tip segment.
+ */
 export const TENTACLES = {
   attachX: -7.5,
   attachYs: [-8, -3, 3, 8] as const,
-  firstSegmentLengths: [22, 20, 20, 22] as const,
+  firstSegmentLengths: [26, 24, 24, 26] as const,
   // Much lighter than the head so they whip around instead of steering it.
   segments: [
-    { length: 22, thickness: 8, density: 2.4 },
-    { length: 18, thickness: 7, density: 2 },
-    { length: 15, thickness: 5, density: 1.8 },
-    { length: 14, thickness: 3, density: 1.6 },
+    { length: 26, thickness: 8, density: 2.2 },
+    { length: 22, thickness: 7, density: 1.9 },
+    { length: 18, thickness: 5.5, density: 1.7 },
+    { length: 15, thickness: 4, density: 1.5 },
+    { length: 13, thickness: 2.5, density: 1.4 },
   ] as const,
   /** Water drag (1/s) across a segment and along it: they stream and curl like ribbons. */
   dragAcross: 7,
   dragAlong: 0.9,
-  /** Share of a swim stroke or lunge applied directly to the tentacles (the rest reaches them through the joints). */
+  /** Share of a swim stroke applied directly to the tentacles (the rest reaches them through the joints). */
   swimShare: 0.25,
-  lungeShare: 0.3,
+  /**
+   * A lunge throws the head and leaves the tentacles behind, like the original (which
+   * stopped them dead): they keep this much of their velocity, flare out sideways by
+   * up to `lungeFlare` px/s and get yanked after the head like a whip.
+   */
+  lungeKeep: 0.15,
+  lungeFlare: 480,
+  /** After a lunge or spin the tentacles thrash for a while: stronger and faster squirming. */
+  thrashTime: 0.65,
+  thrashStrength: 2.6,
+  thrashSpeed: 1.7,
   /** Travelling wave that keeps them squirming (px/s^2 at the tip, radians/s, radians per segment). */
-  wiggleAccel: 2300,
-  wiggleSpeed: 6.5,
+  wiggleAccel: 3000,
+  wiggleSpeed: 7.5,
   wigglePhase: 1.3,
+  /** How much of the squirm is left out of the water. */
+  wiggleInAir: 0.45,
   /** Underwater push away from the body's midline (px/s^2) so the tentacles fan out instead of bunching. */
   spreadAccel: 700,
 } as const;

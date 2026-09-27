@@ -266,6 +266,8 @@ export class GameScene extends Phaser.Scene {
       case 'lunge':
         sfx.play('spin', 0.18, { rate: 1.7 });
         if (event.wet) fx.bubbleBurst(event.x, event.y, 8);
+        // The mid-air second lunge gets a puff so it reads as a double jump.
+        else fx.ring(event.x, event.y, 44, 0xffffff);
         break;
       case 'spin':
         sfx.play('spin', 0.4);
