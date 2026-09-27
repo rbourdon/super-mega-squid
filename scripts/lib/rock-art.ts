@@ -64,10 +64,14 @@ export interface MassDef {
   /** Break long edges into angular crags (default true). */
   crag?: boolean;
   moss?: boolean;
+  /** Moss only grows below this height (a bare peak above it). */
+  mossBelow?: number;
   /** Stones centred above this height use the shaded palette of the original cliff tops. */
   darkAbove?: number;
   /** Region whose gaps are filled with the orange of the original seabed cracks. */
   lava?: (x: number, y: number) => boolean;
+  /** Pools of lava set into the rock, such as a crater's lake (drawn over the stones). */
+  pools?: Pt[][];
   /** Hanging grass under the overhangs. */
   fringe?: boolean;
   /** Vines hanging from the underside, per 1000 px of underside. */
@@ -357,7 +361,8 @@ export class RockArt {
       // Is the nearest edge above (a top) or below/beside? Rubble tops can get a shallower band.
       const up = this.massDist[Math.max(0, yi - 6) * W + xi];
       const down = this.massDist[Math.min(H - 1, yi + 6) * W + xi];
-      const limit = down > up ? (mass.bandTop ?? band) : band;
+      // (Only when clearly so: in a pillar, up and down are about the same.)
+      const limit = up < depth0 - 3 && down > depth0 + 3 ? (mass.bandTop ?? band) : band;
       // Rubble cores are mortar with shards, not stones.
       if (mass.style === 'rubble' && depth0 > limit) continue;
       const r = mass.size * rand.range(0.55, 1.2);
@@ -454,7 +459,16 @@ export class RockArt {
       }
     }
 
-    // Bubbles in the orange cracks.
+    // Lava pools.
+    for (const mass of this.masses) {
+      for (const pool of mass.pools ?? []) {
+        scanPolygon([pool], W, H, (yy, x0, x1) => {
+          for (let i = yy * W + x0; i < yy * W + x1; i++) if (this.paint[i] !== 0) this.paint[i] = ORANGE;
+        });
+      }
+    }
+
+    // Bubbles in the orange cracks and pools.
     this.masses.forEach((mass) => {
       if (!mass.lava) return;
       const [bx0, by0, bx1, by1] = this.bounds(mass.rings[0]);
@@ -544,7 +558,8 @@ export class RockArt {
       if (!mass.moss) return;
       const edges = this.outlineEdges(m);
       const dry = this.water - 25;
-      const up = (e: MossEdge) => e.ny < -0.34 && e.a[1] < dry && e.b[1] < dry;
+      const bare = mass.mossBelow ?? -Infinity;
+      const up = (e: MossEdge) => e.ny < -0.34 && e.a[1] < dry && e.b[1] < dry && e.a[1] > bare && e.b[1] > bare;
       // Short edges (the steps in a craggy outline) join the chain on either side of them.
       const keep = edges.map((e, k) => {
         if (up(e)) return true;

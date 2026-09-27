@@ -51,7 +51,7 @@ test('plays in portrait too', async ({ page }) => {
   await page.setViewportSize({ width: 412, height: 915 });
   await openMenu(page);
   await tapPlay(page);
-  // Portrait stacks the level cards; pick the second one.
+  // Portrait shows the level cards two across; pick the second one.
   await tapLevel(page, 1);
   expect(await sim<string>(page, 'return sim.level.id;')).toBe('arches');
   await waitForSteps(page, 60);

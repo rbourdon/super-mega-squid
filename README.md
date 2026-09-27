@@ -15,11 +15,16 @@ art, sound and music.
 **Goal:** eat all 35 humans (swimmers, divers, ferry passengers and balloonists) before your **rage** meter empties.
 Rage drains constantly, a little faster the longer the rampage lasts, and refills whenever you eat something.
 
-Pick one of two levels when you start:
+Pick one of seven levels when you start:
 
 - **The Cove**: the original map, with cliffs at both ends and a floating isle over open water.
 - **Arch Rock**: a floating stone arch whose legs dip into the sea, a broken sea stack you can dive under, stepping
   stones up to a sky island, a deep trench and a planted reef.
+- **Sky Isles**: tiers of floating isles to climb, up to a great wooded isle high above the sea.
+- **The Grotto**: a vast cave roof over the sea, hung with vines and columns, with gaps to leap up through to its top.
+- **Needle Rocks**: a forest of tall, broken sea stacks with mossy ledges and crowns; some hang over their stumps.
+- **Coral Shallows**: a raised reef thick with weed and coral, a table reef to hide under, a blue hole and wooded cays.
+- **Fire Isle**: a volcano with a lava lake in its crater, its hot roots hanging over glowing vents on the seabed.
 
 High scores are kept for each level.
 
@@ -92,7 +97,7 @@ src/
   config.ts   Every tuning value: physics, abilities, enemies, spawn rates, scoring
   input.ts    Keyboard, gamepad and touch merged into one input per physics step
   audio.ts    Music, ambience and sound effects
-scripts/      Asset pipeline (level tiles, collision outlines, audio transcoding) and the Arch Rock art generator
+scripts/      Asset pipeline (level tiles, collision outlines, audio transcoding) and the level art generator
 art/          Source art and audio the pipeline builds from (not shipped)
 public/       Game-ready assets served as-is
 tests/        unit/ (Vitest) and e2e/ (Playwright)
@@ -109,19 +114,24 @@ right themselves and swimmers bob head-up.
 ### Asset pipeline
 
 Each level's art is a single image about 9000×3000 pixels, too large for many GPUs, in `art/levels/<id>/`.
-`npm run assets:level` composites the vegetation layer over the terrain, slices the result into 512 px tiles (skipping
+`npm run assets:level` composites the vegetation layer over the terrain, slices the result into 1024 px tiles (skipping
 empty ones), extracts collision outlines from the terrain's alpha channel with marching squares, renders a preview for
 the level select screen, and writes `src/level/<id>.json`. `npm run assets:audio` transcodes the original WAV files to
 Ogg Vorbis and MP3 (needs `ffmpeg`). The outputs are committed, so you only need these after changing files in `art/`.
+The game loads only the previews up front; a level's tiles load when you start it (with a progress bar), and the
+previous level's are freed.
 
-The Cove is the original 2013 art. Arch Rock is drawn by `npm run assets:arches` in the same style.
-`scripts/generate-arches.ts` lays its rocks out as hand-shaped outlines, and `scripts/lib/rock-art.ts` paints them like
-the original: craggy stones with outlines, bevels, light rims and spots; dark mortar with strata and shards (under the
-tops of the floating islands, as in the original); orange cracks; thick moss caps with light blobs and flame-shaped
-drips; hanging grass under overhangs; vines that crawl over the rock and hang from it; and sand. Its seaweed, coral,
-shells and trees are cut out of the original art and replanted. Anything thin or hanging goes in the decoration layer,
-so it never becomes collision. The generator is deterministic; after changing it, run `npm run assets:arches` and then
-`npm run assets:level`.
+The Cove is the original 2013 art. The other levels are drawn by `npm run assets:generate` in the same style. Each
+level's layout is in `scripts/levels/<id>.ts`: hand-shaped rock outlines (plus helpers for floating islands, sea stacks,
+stumps and the seabed in `scripts/levels/common.ts`) and which decorations each rock gets. `scripts/lib/rock-art.ts`
+paints them like the original: craggy stones with outlines, bevels, light rims and spots; dark mortar with strata and
+shards (under the tops of the floating islands, as in the original); orange cracks and lava pools; thick moss caps with
+light blobs and flame-shaped drips; hanging grass under overhangs; vines that crawl over the rock and hang from it; and
+sand. Its seaweed, coral, shells and trees are cut out of the original art and replanted. Anything thin or hanging goes
+in the decoration layer, so it never becomes collision. In 2D, rock that stands on the seabed and rises through the
+surface would cut the sea in two, so rocks that pierce the surface float, with room to swim beneath (a test checks
+every level for sealed-off water). The generator is deterministic; after changing it, run `npm run assets:generate`
+(optionally with level ids) and then `npm run assets:level`.
 
 ## What changed from the 2013 version
 
@@ -130,7 +140,7 @@ nothing, there was no score, no goal and no ending. This version finishes the de
 
 - **A goal and an ending**: rage is your life, the town has 35 humans to eat, and there are victory and game-over screens
   with a score breakdown and saved high scores.
-- **A second level**: Arch Rock, a new map in the style of the original, chosen from a level select screen.
+- **Six new levels** in the style of the original, chosen from a level select screen.
 - **Escalation**: alert levels bring helicopter gunfire, submarine torpedoes and more military traffic.
 - **More to do**: combos and score, spin parries, a three-hit ferry with passengers, balloonists who fall into the sea,
   cargo planes that drop crates, swimmers and divers who flee, moored buoys, bubbles, splashes and ripples.

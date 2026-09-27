@@ -110,6 +110,40 @@ test.describe('Super Mega Squid', () => {
     expect(errors).toEqual([]);
   });
 
+  test('moves around the level grid by rows and columns', async ({ page }) => {
+    const errors = trackErrors(page);
+    await openMenu(page);
+    await page.keyboard.press('Enter');
+    await expect.poll(() => activeScenes(page)).toEqual(['Levels']);
+    const state = () =>
+      page.evaluate(() => {
+        const scene = window.__SMS__!.scene.getScene('Levels') as unknown as { selected: number; blurb: { text: string } };
+        return { selected: scene.selected, blurb: scene.blurb.text };
+      });
+    // Four across in landscape: down a row, right, up a row, and down into the short last row.
+    const press = async (key: string, selected: number) => {
+      await page.keyboard.press(key);
+      await expect.poll(async () => (await state()).selected).toBe(selected);
+    };
+    await press('ArrowDown', 4);
+    await press('ArrowRight', 5);
+    await press('ArrowUp', 1);
+    await press('ArrowRight', 2);
+    await press('ArrowRight', 3);
+    await press('ArrowDown', 6);
+    expect((await state()).blurb).toContain('volcano');
+    await press('ArrowLeft', 5);
+    await press('ArrowLeft', 4);
+    await page.keyboard.press('Enter');
+    await expect.poll(() => activeScenes(page)).toEqual(['Game', 'Hud']);
+    await waitForSteps(page, 30);
+    expect(await sim<string>(page, 'return sim.level.id;')).toBe('needles');
+    // Its tiles were loaded before play started.
+    const loaded = await page.evaluate(() => window.__SMS__!.textures.exists('needles:tile_0_0'));
+    expect(loaded).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
   test('eating the last human wins the game', async ({ page }) => {
     await openMenu(page);
     await startLevel(page, 0);
