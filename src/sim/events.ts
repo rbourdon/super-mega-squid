@@ -43,5 +43,5 @@ export type SimEvent =
   | { type: 'explosion'; x: number; y: number; big: boolean }
   | { type: 'bulletSplash'; x: number; y: number }
   | { type: 'alert'; level: number }
-  | { type: 'slowmo' }
+  | { type: 'slowmo'; x: number; y: number }
   | { type: 'gameOver'; won: boolean };

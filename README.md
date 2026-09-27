@@ -29,6 +29,8 @@ Pick one of seven levels when you start:
 High scores are kept for each level.
 
 You only hurt things you hit **fast**: swim hard, lunge or spin your tentacles. Slow bumps just push prey around.
+Kills made out of the water can drop time into slow motion, as in the original: always for a wreck (a boat, a
+balloon, an aircraft) or a human, and one time in three for anything else.
 
 | Action     | Keyboard           | Gamepad             | Touch                  |
 | ---------- | ------------------ | ------------------- | ---------------------- |
@@ -144,6 +146,9 @@ nothing, there was no score, no goal and no ending. This version finishes the de
 - **Escalation**: alert levels bring helicopter gunfire, submarine torpedoes and more military traffic.
 - **More to do**: combos and score, spin parries, a three-hit ferry with passengers, balloonists who fall into the sea,
   cargo planes that drop crates, swimmers and divers who flee, moored buoys, bubbles, splashes and ripples.
+- **Slow motion you notice**: the original slowed time on one airborne kill in seven, briefly, with no other cue. Here
+  wrecks and humans snatched mid-leap always slow it, it holds for a moment, the camera pushes in and sounds drop in
+  pitch.
 - **Modern controls and presentation**: gamepad support, a floating touch joystick, a layout that adapts to any screen
   shape (landscape, portrait or anything between), a pause menu, music and sound toggles, and the wind/underwater
   ambience the original prepared but never played.

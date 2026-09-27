@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { audio, type AudioDirector } from '../audio';
 import { tileKey } from '../assets';
-import { PHYSICS, RAGE } from '../config';
+import { PHYSICS, SLOWMO } from '../config';
 import { InputController } from '../input';
 import { LEVELS, levelById, type LevelDef } from '../level/levels';
 import { Backdrop } from '../render/Backdrop';
@@ -50,6 +50,10 @@ export class GameScene extends Phaser.Scene {
   private views!: EntityViews;
   private effects!: Effects;
   private accumulator = 0;
+  /** Real seconds left at full slow motion before it starts to recover. */
+  private slowHold = 0;
+  /** Camera zoom that fits the screen, before the slow-motion push in. */
+  private baseZoom = 1;
   private camX = 0;
   private camY = 0;
   private readonly view = new Phaser.Geom.Rectangle();
@@ -108,6 +112,7 @@ export class GameScene extends Phaser.Scene {
     this.paused = false;
     this.ended = false;
     this.timeScale = 1;
+    this.slowHold = 0;
     this.accumulator = 0;
     this.endTimer = -1;
 
@@ -139,8 +144,9 @@ export class GameScene extends Phaser.Scene {
       this.scale.off('resize', this.fitCamera, this);
       this.game.events.off(Phaser.Core.Events.BLUR, this.onBlur, this);
       this.sfx.stopAmbience();
-      // The animation manager is shared by all scenes; don't leave it in slow motion.
+      // The animation manager and the audio are shared by all scenes; don't leave them in slow motion.
       this.anims.globalTimeScale = 1;
+      this.sfx.rate = 1;
     });
 
     this.scene.launch('Hud');
@@ -152,7 +158,8 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setSize(width, height);
     // Show at least 960x540 world pixels (the original showed 800x480).
-    cam.setZoom(uiMetrics(width, height).zoom);
+    this.baseZoom = uiMetrics(width, height).zoom;
+    cam.setZoom(this.baseZoom * (1 + SLOWMO.zoom * this.slowAmount()));
     cam.centerOn(this.camX, this.camY);
     // Redraw size-dependent layers now: a paused scene doesn't run update().
     if (this.backdrop && this.water) {
@@ -184,8 +191,9 @@ export class GameScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     const dt = Math.min(delta, 100) / 1000;
-    // Slow motion recovers in real time (original: +0.01 per frame).
-    if (this.timeScale < 1) this.timeScale = Math.min(1, this.timeScale + RAGE.slowMoRecoverPerSecond * dt);
+    // Slow motion holds for a moment, then recovers in real time.
+    if (this.slowHold > 0) this.slowHold -= dt;
+    else if (this.timeScale < 1) this.timeScale = Math.min(1, this.timeScale + SLOWMO.recoverPerSecond * dt);
     this.accumulator += dt * this.timeScale;
     let steps = 0;
     while (this.accumulator >= PHYSICS.step && steps < MAX_STEPS_PER_FRAME) {
@@ -197,6 +205,10 @@ export class GameScene extends Phaser.Scene {
     if (steps === MAX_STEPS_PER_FRAME) this.accumulator = 0;
     this.anims.globalTimeScale = this.timeScale;
     this.tweens.timeScale = this.timeScale;
+    // In slow motion the camera pushes in and sounds drop in pitch.
+    const slow = this.slowAmount();
+    this.cameras.main.setZoom(this.baseZoom * (1 + SLOWMO.zoom * slow));
+    this.sfx.rate = 1 - (1 - SLOWMO.soundRate) * slow;
 
     const alpha = this.accumulator / PHYSICS.step;
     const worldDt = dt * this.timeScale;
@@ -247,6 +259,12 @@ export class GameScene extends Phaser.Scene {
   worldToScreen(x: number, y: number): { x: number; y: number } {
     const cam = this.cameras.main;
     return { x: (x - cam.worldView.x) * cam.zoom, y: (y - cam.worldView.y) * cam.zoom };
+  }
+
+  /** How deep into slow motion the game is: 1 at its slowest, 0 at normal speed (eased). */
+  private slowAmount(): number {
+    const t = Phaser.Math.Clamp((1 - this.timeScale) / (1 - SLOWMO.scale), 0, 1);
+    return t * t * (3 - 2 * t);
   }
 
   private shake(intensity: number, duration = 220): void {
@@ -354,7 +372,10 @@ export class GameScene extends Phaser.Scene {
         this.shake(0.004, 400);
         break;
       case 'slowmo':
-        this.timeScale = RAGE.slowMoScale;
+        this.timeScale = SLOWMO.scale;
+        this.slowHold = SLOWMO.hold;
+        // Now, so the kill announced right after it sounds slowed too.
+        this.sfx.rate = SLOWMO.soundRate;
         break;
       case 'gameOver':
         this.ended = true;

@@ -19,6 +19,8 @@ export class AudioDirector {
   private windLevel = 0;
   private underwaterLevel = 0;
   private lastPlayed = new Map<SoundKey, number>();
+  /** Playback rate applied to every effect (lowered in slow motion). */
+  rate = 1;
 
   constructor(private readonly manager: Phaser.Sound.BaseSoundManager) {}
 
@@ -64,7 +66,7 @@ export class AudioDirector {
     const last = this.lastPlayed.get(key) ?? -Infinity;
     if (now - last < gap) return;
     this.lastPlayed.set(key, now);
-    this.manager.play(key, { volume: Math.min(1, volume), rate: options.rate ?? 1, detune: options.detune ?? 0 });
+    this.manager.play(key, { volume: Math.min(1, volume), rate: (options.rate ?? 1) * this.rate, detune: options.detune ?? 0 });
   }
 
   startAmbience(): void {
