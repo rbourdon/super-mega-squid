@@ -48,7 +48,11 @@ describe.each(LEVELS)('level $name', (level) => {
     const top = WORLD.waterLevel + 70;
     const cols = Math.floor(level.data.width / cell);
     const rows = Math.floor((level.data.height - top) / cell);
-    const open = (c: number, r: number) => terrain.isClear(c * cell + cell / 2, top + r * cell + cell / 2, 3);
+    // Classify each cell once: point-in-polygon tests against the level outlines are the slow part.
+    const open = new Uint8Array(cols * rows);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) open[r * cols + c] = terrain.isSolid(c * cell + cell / 2, top + r * cell + cell / 2) ? 0 : 1;
+    }
     const seen = new Uint8Array(cols * rows);
     const start = Math.floor(level.spawn.x / cell);
     const queue = [start];
@@ -61,13 +65,13 @@ describe.each(LEVELS)('level $name', (level) => {
         const nc = c + dc;
         const nr = r + dr;
         const j = nr * cols + nc;
-        if (nc < 0 || nr < 0 || nc >= cols || nr >= rows || seen[j] || !open(nc, nr)) continue;
+        if (nc < 0 || nr < 0 || nc >= cols || nr >= rows || seen[j] || !open[j]) continue;
         seen[j] = 1;
         queue.push(j);
       }
     }
     let sealed = 0;
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (!seen[r * cols + c] && open(c, r)) sealed++;
+    for (let i = 0; i < cols * rows; i++) if (open[i] && !seen[i]) sealed++;
     expect(sealed * cell * cell).toBeLessThan(2000);
   });
 });
