@@ -1,0 +1,37 @@
+{
+  "name": "super-mega-squid",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Super Mega Squid: Terror of the Deep. A physics-driven arcade rampage for the browser.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "assets:arches": "tsx scripts/generate-arches.ts",
+    "assets:level": "tsx scripts/build-level.ts",
+    "assets:audio": "bash scripts/convert-audio.sh"
+  },
+  "dependencies": {
+    "phaser": "4.2.1",
+    "planck": "1.5.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.3",
+    "@types/pngjs": "6.0.5",
+    "pngjs": "7.0.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.1",
+    "vitest": "5.0.2"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

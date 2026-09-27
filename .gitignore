@@ -1,6 +1,10 @@
-#assets
+node_modules/
+dist/
+test-results/
+playwright-report/
+*.log
+.DS_Store
+
+# Illustrator working files
 *.ai
 /working_assets
-
-#production
-/bin
